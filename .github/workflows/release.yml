@@ -1,4 +1,4 @@
-name: Release
+name: release
 
 permissions:
   contents: write
@@ -15,12 +15,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Set node
-        uses: actions/setup-node@v4
+      - run: corepack enable
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: pnpm
 
-      - run: npx changelogithub
+      - name: 📦 Install dependencies
+        run: pnpm install
+
+      - run: pnpm changelogithub
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
