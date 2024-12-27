@@ -1,0 +1,32 @@
+{
+  "name": "zero-vue-playground",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "vite build",
+    "preview": "vite preview",
+    "dev:ui": "vite dev",
+    "dev:zero-cache": "zero-cache-dev -p app/db/schema.ts",
+    "dev:db-up": "docker compose --env-file .env -f ./docker/docker-compose.yml up",
+    "dev:db-down": "docker compose --env-file .env -f ./docker/docker-compose.yml down",
+    "dev:clean": "source .env && docker volume rm -f docker_zstart_pgdata && rm -rf \"${ZERO_REPLICA_FILE}\"*",
+    "test:types": "vue-tsc --build"
+  },
+  "dependencies": {
+    "jose": "^5.9.6",
+    "js-cookie": "^3.0.5",
+    "vue": "^3.5.13",
+    "zero-vue": "latest"
+  },
+  "devDependencies": {
+    "@tsconfig/node22": "^22.0.0",
+    "@types/js-cookie": "^3.0.6",
+    "@types/node": "^22.10.2",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "@vue/tsconfig": "^0.7.0",
+    "typescript": "~5.6.3",
+    "vite": "^6.0.5",
+    "vue-tsc": "^2.1.10"
+  }
+}
