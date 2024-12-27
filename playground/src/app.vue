@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { escapeLike, Zero } from '@rocicorp/zero'
-import { useQuery } from 'zero-vue'
-import { computed, ref } from 'vue'
 import { decodeJwt } from 'jose'
 import Cookies from 'js-cookie'
+import { computed, ref } from 'vue'
+import { useQuery } from 'zero-vue'
 
+import { useInterval } from '~/composables/use-interval'
 import { randomMessage } from '~/db/data/test-data'
 import { schema } from '~/db/schema'
-import { useInterval } from '~/composables/use-interval'
-import { randInt } from '~/utils/rand'
 import { formatDate } from '~/utils/date'
+import { randInt } from '~/utils/rand'
 
 const encodedJWT = Cookies.get('jwt')
 const decodedJWT = encodedJWT && decodeJwt(encodedJWT)
@@ -52,7 +52,7 @@ const filteredMessages = useQuery(() => {
 
 const hasFilters = computed(() => filterUser.value || filterText.value)
 
-const deleteRandomMessage = () => {
+function deleteRandomMessage() {
   if (allMessages.value.length === 0) {
     return false
   }
@@ -62,12 +62,12 @@ const deleteRandomMessage = () => {
   return true
 }
 
-const addRandomMessage = () => {
+function addRandomMessage() {
   z.mutate.message.insert(randomMessage(users.value, mediums.value))
   return true
 }
 
-const handleAction = () => {
+function handleAction() {
   if (action.value === 'add') {
     return addRandomMessage()
   }
@@ -89,15 +89,16 @@ useInterval(
 
 const INITIAL_HOLD_DELAY_MS = 300
 let holdTimer: number | null = null
-const handleAddAction = () => {
+function handleAddAction() {
   addRandomMessage()
   holdTimer = setTimeout(() => {
     action.value = 'add'
   }, INITIAL_HOLD_DELAY_MS)
 }
 
-const handleRemoveAction = (e: MouseEvent | TouchEvent) => {
+function handleRemoveAction(e: MouseEvent | TouchEvent) {
   if (z.userID === 'anon' && 'shiftKey' in e && !e.shiftKey) {
+    // eslint-disable-next-line no-alert
     alert('You must be logged in to delete. Hold shift to try anyway.')
     return
   }
@@ -108,7 +109,7 @@ const handleRemoveAction = (e: MouseEvent | TouchEvent) => {
   }, INITIAL_HOLD_DELAY_MS)
 }
 
-const stopAction = () => {
+function stopAction() {
   if (holdTimer) {
     clearTimeout(holdTimer)
     holdTimer = null
@@ -117,13 +118,16 @@ const stopAction = () => {
   action.value = undefined
 }
 
-const editMessage = (e: MouseEvent, id: string, senderID: string, prev: string) => {
+function editMessage(e: MouseEvent, id: string, senderID: string, prev: string) {
   if (senderID !== z.userID && !e.shiftKey) {
+    // eslint-disable-next-line no-alert
     alert(
       'You aren\'t logged in as the sender of this message. Editing won\'t be permitted. Hold the shift key to try anyway.',
     )
     return
   }
+
+  // eslint-disable-next-line no-alert
   const body = prompt('Edit message', prev)
   z.mutate.message.update({
     id,
@@ -131,8 +135,7 @@ const editMessage = (e: MouseEvent, id: string, senderID: string, prev: string) 
   })
 }
 
-const jwt = Cookies.get('jwt')
-const toggleLogin = async () => {
+async function toggleLogin() {
   if (z.userID === 'anon') {
     await fetch('/api/login')
   }
