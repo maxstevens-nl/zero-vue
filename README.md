@@ -5,7 +5,7 @@
 [![Github Actions][github-actions-src]][github-actions-href]
 [![Codecov][codecov-src]][codecov-href]
 
-> Package description
+> Vue bindings for [Zero](https://zero.rocicorp.dev/)
 
 ## Usage
 
@@ -20,8 +20,22 @@ pnpm install zero-vue
 ```
 
 ```js
-import {} from 'zero-vue'
+import { Zero } from '@rocicorp/zero'
+import { useQuery } from 'zero-vue'
+
+// see docs: https://zero.rocicorp.dev/docs/introduction
+const z = new Zero({
+  userID,
+  server: import.meta.env.VITE_ZERO_SERVER,
+  schema,
+  kvStore: 'mem',
+})
+
+const users = useQuery(z.query.user)
 ```
+
+> [!TIP]
+> See [the playground](./playground) for a full working example based on [rocicorp/hello-zero](https://github.com/rocicorp/hello-zero).
 
 ## 💻 Development
 
