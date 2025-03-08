@@ -5,13 +5,12 @@
 // See https://github.com/rocicorp/mono/blob/main/apps/zbugs/src/domain/schema.ts
 // for more complex examples, including many-to-many.
 
-import type { ExpressionBuilder, Row } from '@rocicorp/zero'
+import type { ExpressionBuilder, PermissionsConfig, Row } from '@rocicorp/zero'
 import {
   ANYONE_CAN,
   boolean,
   createSchema,
   definePermissions,
-  NOBODY_CAN,
   number,
   relationships,
   string,
@@ -36,8 +35,8 @@ const medium = table('medium')
 const message = table('message')
   .columns({
     id: string(),
-    senderID: string(),
-    mediumID: string(),
+    senderID: string().from('sender_id'),
+    mediumID: string().from('medium_id'),
     body: string(),
     timestamp: number(),
   })
@@ -85,33 +84,29 @@ export const permissions = definePermissions<AuthData, Schema>(schema, () => {
   return {
     medium: {
       row: {
-        insert: NOBODY_CAN,
-        update: {
-          preMutation: NOBODY_CAN,
-        },
-        delete: NOBODY_CAN,
+        select: ANYONE_CAN,
       },
     },
     user: {
       row: {
-        insert: NOBODY_CAN,
-        update: {
-          preMutation: NOBODY_CAN,
-        },
-        delete: NOBODY_CAN,
+        select: ANYONE_CAN,
       },
     },
     message: {
       row: {
         // anyone can insert
         insert: ANYONE_CAN,
-        // only sender can edit their own messages
         update: {
+          // sender can only edit own messages
           preMutation: [allowIfMessageSender],
+          // sender can only edit messages to be owned by self
+          postMutation: [allowIfMessageSender],
         },
         // must be logged in to delete
         delete: [allowIfLoggedIn],
+        // everyone can read current messages
+        select: ANYONE_CAN,
       },
     },
-  }
+  } satisfies PermissionsConfig<AuthData, Schema>
 })

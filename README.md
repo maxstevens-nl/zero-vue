@@ -26,7 +26,7 @@ import { useQuery } from 'zero-vue'
 // see docs: https://zero.rocicorp.dev/docs/introduction
 const z = new Zero({
   userID,
-  server: import.meta.env.VITE_ZERO_SERVER,
+  server: import.meta.env.VITE_PUBLIC_SERVER,
   schema,
   kvStore: 'mem',
 })
