@@ -13,7 +13,7 @@ type State = [Entry, QueryResultDetails]
 const complete = { type: 'complete' } as const
 const unknown = { type: 'unknown' } as const
 
-class VueView<V> implements Output {
+export class VueView<V> implements Output {
   readonly #input: Input
   readonly #format: Format
   readonly #onDestroy: () => void
