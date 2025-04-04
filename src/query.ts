@@ -1,12 +1,24 @@
 // based on https://github.com/rocicorp/mono/tree/main/packages/zero-solid
 
-import type { HumanReadable, Query, ResultType, Schema, TTL } from '@rocicorp/zero'
+import type {
+  HumanReadable,
+  Query,
+  ResultType,
+  Schema,
+} from '@rocicorp/zero'
 import type { UseQueryOptions } from '@rocicorp/zero/solid'
 import type { ComputedRef, MaybeRefOrGetter } from 'vue'
 import type { VueView } from './view'
 
 import { DEFAULT_TTL } from '@rocicorp/zero'
-import { computed, getCurrentInstance, onUnmounted, shallowRef, toValue, watchEffect } from 'vue'
+import {
+  computed,
+  getCurrentInstance,
+  onUnmounted,
+  shallowRef,
+  toValue,
+  watch,
+} from 'vue'
 import { vueViewFactory } from './view'
 
 interface QueryResult<TReturn> {
@@ -22,29 +34,30 @@ export function useQuery<
   query: MaybeRefOrGetter<Query<TSchema, TTable, TReturn>>,
   options?: MaybeRefOrGetter<UseQueryOptions>,
 ): QueryResult<TReturn> {
-  const ttl = computed(() => toValue(options)?.ttl ?? DEFAULT_TTL)
-  const view = shallowRef<VueView<HumanReadable<TReturn>>>(
-    createMaterializedView(toValue(query), toValue(ttl)),
+  const ttl = computed(() => {
+    return toValue(options)?.ttl ?? DEFAULT_TTL
+  })
+  const view = shallowRef<VueView<HumanReadable<TReturn>> | null>(null)
+
+  watch(
+    () => toValue(query),
+    (q) => {
+      view.value?.destroy()
+      view.value = q.materialize(vueViewFactory, ttl.value)
+    },
+    { immediate: true },
   )
 
-  watchEffect(() => {
-    view.value.destroy()
-    view.value = createMaterializedView(toValue(query), toValue(ttl))
+  watch(ttl, (ttl) => {
+    toValue(query).updateTTL(ttl)
   })
 
   if (getCurrentInstance()) {
-    onUnmounted(() => view.value.destroy())
+    onUnmounted(() => view.value!.destroy())
   }
 
   return {
-    data: computed(() => view.value.data),
-    status: computed(() => view.value.status),
-  }
-
-  function createMaterializedView(
-    query: Query<TSchema, TTable, TReturn>,
-    ttl: TTL,
-  ) {
-    return query.materialize(vueViewFactory, ttl)
+    data: computed(() => view.value!.data),
+    status: computed(() => view.value!.status),
   }
 }

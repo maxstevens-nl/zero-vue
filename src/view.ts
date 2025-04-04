@@ -1,14 +1,23 @@
 // based on https://github.com/rocicorp/mono/tree/main/packages/zero-solid
 
-import type { Change, Entry, Format, HumanReadable, Input, Output, Query, ResultType, Schema, ViewFactory } from '@rocicorp/zero'
+import type {
+  Change,
+  Entry,
+  Format,
+  HumanReadable,
+  Input,
+  Output,
+  Query,
+  ResultType,
+  Schema,
+  ViewFactory,
+} from '@rocicorp/zero'
 import { applyChange } from '@rocicorp/zero'
 import { reactive } from 'vue'
 
 interface QueryResultDetails {
   readonly type: ResultType
 }
-
-type State = [Entry, QueryResultDetails]
 
 const complete = { type: 'complete' } as const
 const unknown = { type: 'unknown' } as const
@@ -18,7 +27,8 @@ export class VueView<V> implements Output {
   readonly #format: Format
   readonly #onDestroy: () => void
 
-  #state: State
+  #data: Entry
+  #status: QueryResultDetails
 
   constructor(
     input: Input,
@@ -30,10 +40,8 @@ export class VueView<V> implements Output {
     this.#input = input
     this.#format = format
     this.#onDestroy = onDestroy
-    this.#state = reactive([
-      { '': format.singular ? undefined : [] },
-      queryComplete === true ? complete : unknown,
-    ])
+    this.#data = reactive({ '': format.singular ? undefined : [] })
+    this.#status = queryComplete === true ? complete : unknown
     input.setOutput(this)
 
     for (const node of input.fetch({})) {
@@ -42,17 +50,17 @@ export class VueView<V> implements Output {
 
     if (queryComplete !== true) {
       void queryComplete.then(() => {
-        this.#state[1] = complete
+        this.#status = complete
       })
     }
   }
 
   get data() {
-    return this.#state[0][''] as V
+    return this.#data[''] as V
   }
 
   get status() {
-    return this.#state[1].type
+    return this.#status.type
   }
 
   destroy() {
@@ -60,13 +68,7 @@ export class VueView<V> implements Output {
   }
 
   #applyChange(change: Change): void {
-    applyChange(
-      this.#state[0],
-      change,
-      this.#input.getSchema(),
-      '',
-      this.#format,
-    )
+    applyChange(this.#data, change, this.#input.getSchema(), '', this.#format)
   }
 
   push(change: Change): void {
