@@ -1,11 +1,6 @@
 // based on https://github.com/rocicorp/mono/tree/main/packages/zero-solid
 
-import type {
-  HumanReadable,
-  Query,
-  ResultType,
-  Schema,
-} from '@rocicorp/zero'
+import type { HumanReadable, Query, ResultType, Schema } from '@rocicorp/zero'
 import type { UseQueryOptions } from '@rocicorp/zero/solid'
 import type { ComputedRef, MaybeRefOrGetter } from 'vue'
 import type { VueView } from './view'

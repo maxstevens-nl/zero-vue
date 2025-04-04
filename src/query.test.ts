@@ -38,7 +38,7 @@ describe('useQuery', () => {
   it('useQuery', async () => {
     const { z, tableQuery } = await setupTestEnvironment()
 
-    const { data: rows, status: resultType } = useQuery(() => tableQuery)
+    const { data: rows, status } = useQuery(() => tableQuery)
     expect(rows.value).toMatchInlineSnapshot(`[
   {
     "a": 1,
@@ -51,7 +51,7 @@ describe('useQuery', () => {
     Symbol(rc): 1,
   },
 ]`)
-    expect(resultType.value).toEqual('unknown')
+    expect(status.value).toEqual('unknown')
 
     await z.mutate.table.insert({ a: 3, b: 'c' })
     await new Promise(resolve => setTimeout(resolve, 0))
