@@ -54,7 +54,7 @@ describe('useQuery', () => {
     expect(status.value).toEqual('unknown')
 
     await z.mutate.table.insert({ a: 3, b: 'c' })
-    await new Promise(resolve => setTimeout(resolve, 0))
+    await 1
 
     expect(rows.value).toMatchInlineSnapshot(`[
   {
@@ -99,7 +99,7 @@ describe('useQuery', () => {
     materializeSpy.mockClear()
 
     ttl.value = '10m'
-    await 0
+    await 1
 
     expect(materializeSpy).toHaveBeenCalledTimes(0)
     expect(updateTTLSpy).toHaveBeenCalledExactlyOnceWith('10m')
@@ -148,7 +148,7 @@ describe('useQuery', () => {
     resetLogs()
 
     a.value = 2
-    await new Promise(resolve => setTimeout(resolve, 0))
+    await 1
 
     expect(rowLog).toMatchInlineSnapshot(`[
   [
