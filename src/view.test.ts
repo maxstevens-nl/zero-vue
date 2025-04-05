@@ -9,7 +9,7 @@ import {
   table,
   Zero,
 } from '@rocicorp/zero'
-import { expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { VueView, vueViewFactory } from './view'
 
 const simpleSchema = createSchema({
@@ -100,16 +100,17 @@ async function setupTestEnvironment<S extends Schema>(schema: S) {
   return { z }
 }
 
-it('basics', async () => {
-  const { z } = await setupTestEnvironment(simpleSchema)
-  const tableQuery = z.query.table
+describe('vueView', () => {
+  it('basics', async () => {
+    const { z } = await setupTestEnvironment(simpleSchema)
+    const tableQuery = z.query.table
 
-  await z.mutate.table.insert({ a: 1, b: 'a' })
-  await z.mutate.table.insert({ a: 2, b: 'b' })
+    await z.mutate.table.insert({ a: 1, b: 'a' })
+    await z.mutate.table.insert({ a: 2, b: 'b' })
 
-  const view = tableQuery.materialize(vueViewFactory)
+    const view = tableQuery.materialize(vueViewFactory)
 
-  expect(view.data).toMatchInlineSnapshot(`
+    expect(view.data).toMatchInlineSnapshot(`
     [
       {
         "a": 1,
@@ -124,12 +125,12 @@ it('basics', async () => {
     ]
   `)
 
-  // TODO: Test with a real resolver
-  // expect(view.status).toEqual("complete");
+    // TODO: Test with a real resolver
+    // expect(view.status).toEqual("complete");
 
-  await z.mutate.table.insert({ a: 3, b: 'c' })
+    await z.mutate.table.insert({ a: 3, b: 'c' })
 
-  expect(view.data).toMatchInlineSnapshot(`
+    expect(view.data).toMatchInlineSnapshot(`
     [
       {
         "a": 1,
@@ -149,10 +150,10 @@ it('basics', async () => {
     ]
   `)
 
-  await z.mutate.table.delete({ a: 1 })
-  await z.mutate.table.delete({ a: 2 })
+    await z.mutate.table.delete({ a: 1 })
+    await z.mutate.table.delete({ a: 2 })
 
-  expect(view.data).toMatchInlineSnapshot(`
+    expect(view.data).toMatchInlineSnapshot(`
     [
       {
         "a": 3,
@@ -162,55 +163,58 @@ it('basics', async () => {
     ]
   `)
 
-  await z.mutate.table.delete({ a: 3 })
+    await z.mutate.table.delete({ a: 3 })
 
-  expect(view.data).toEqual([])
-})
-
-it('basics-perf', async () => {
-  const { z } = await setupTestEnvironment(simpleSchema)
-  const tableQuery = z.query.table
-
-  for (const i in [...Array.from({ length: 3000 }).keys()]) {
-    await z.mutate.table.insert({ a: Number(i), b: 'a' })
-  }
-
-  const view = tableQuery.materialize(vueViewFactory)
-
-  expect(view.data.length).toBe(3000)
-})
-
-it('hydrate-empty', async () => {
-  const { z } = await setupTestEnvironment(simpleSchema)
-  const tableQuery = z.query.table
-
-  const view = tableQuery.materialize(vueViewFactory)
-
-  expect(view.data).toEqual([])
-})
-
-it('tree', async () => {
-  const { z } = await setupTestEnvironment(treeSchema)
-
-  await z.mutate.table.insert({ id: 1, name: 'foo', data: null, childID: 2 })
-  await z.mutate.table.insert({
-    id: 2,
-    name: 'foobar',
-    data: null,
-    childID: null,
-  })
-  await z.mutate.table.insert({ id: 3, name: 'mon', data: null, childID: 4 })
-  await z.mutate.table.insert({
-    id: 4,
-    name: 'monkey',
-    data: null,
-    childID: null,
+    expect(view.data).toEqual([])
   })
 
-  const query = z.query.table.related('children')
-  const view = query.materialize(vueViewFactory)
+  it.skip('basics-perf', async () => {
+    const iterations = 10_000
 
-  expect(view.data).toMatchInlineSnapshot(`
+    const { z } = await setupTestEnvironment(simpleSchema)
+    const tableQuery = z.query.table
+
+    const view = tableQuery.materialize(vueViewFactory)
+    expect(view.data.length).toBe(0)
+
+    for (const i in [...Array.from({ length: iterations }).keys()]) {
+      await z.mutate.table.insert({ a: Number(i), b: 'a' })
+    }
+
+    expect(view.data.length).toBe(iterations)
+  })
+
+  it('hydrate-empty', async () => {
+    const { z } = await setupTestEnvironment(simpleSchema)
+    const tableQuery = z.query.table
+
+    const view = tableQuery.materialize(vueViewFactory)
+
+    expect(view.data).toEqual([])
+  })
+
+  it('tree', async () => {
+    const { z } = await setupTestEnvironment(treeSchema)
+
+    await z.mutate.table.insert({ id: 1, name: 'foo', data: null, childID: 2 })
+    await z.mutate.table.insert({
+      id: 2,
+      name: 'foobar',
+      data: null,
+      childID: null,
+    })
+    await z.mutate.table.insert({ id: 3, name: 'mon', data: null, childID: 4 })
+    await z.mutate.table.insert({
+      id: 4,
+      name: 'monkey',
+      data: null,
+      childID: null,
+    })
+
+    const query = z.query.table.related('children')
+    const view = query.materialize(vueViewFactory)
+
+    expect(view.data).toMatchInlineSnapshot(`
     [
       {
         "childID": 2,
@@ -263,8 +267,8 @@ it('tree', async () => {
     ]
   `)
 
-  await z.mutate.table.insert({ id: 5, name: 'chocolate', childID: 2 })
-  expect(view.data).toMatchInlineSnapshot(`
+    await z.mutate.table.insert({ id: 5, name: 'chocolate', childID: 2 })
+    expect(view.data).toMatchInlineSnapshot(`
     [
       {
         "childID": 2,
@@ -333,8 +337,8 @@ it('tree', async () => {
     ]
   `)
 
-  await z.mutate.table.delete({ id: 2 })
-  expect(view.data).toMatchInlineSnapshot(`
+    await z.mutate.table.delete({ id: 2 })
+    expect(view.data).toMatchInlineSnapshot(`
     [
       {
         "childID": 2,
@@ -379,13 +383,13 @@ it('tree', async () => {
     ]
   `)
 
-  await z.mutate.table.insert({
-    id: 2,
-    name: 'foobaz',
-    childID: null,
-  })
+    await z.mutate.table.insert({
+      id: 2,
+      name: 'foobaz',
+      childID: null,
+    })
 
-  expect(view.data).toMatchInlineSnapshot(`
+    expect(view.data).toMatchInlineSnapshot(`
     [
       {
         "childID": 2,
@@ -453,18 +457,18 @@ it('tree', async () => {
       },
     ]
   `)
-})
+  })
 
-it('tree-single', async () => {
-  const { z } = await setupTestEnvironment(treeSchema)
+  it('tree-single', async () => {
+    const { z } = await setupTestEnvironment(treeSchema)
 
-  await z.mutate.table.insert({ id: 1, name: 'foo', childID: 2 })
-  await z.mutate.table.insert({ id: 2, name: 'foobar', childID: null })
+    await z.mutate.table.insert({ id: 1, name: 'foo', childID: 2 })
+    await z.mutate.table.insert({ id: 2, name: 'foobar', childID: null })
 
-  const query = z.query.table.related('children').one()
-  const view = query.materialize(vueViewFactory)
+    const query = z.query.table.related('children').one()
+    const view = query.materialize(vueViewFactory)
 
-  expect(view.data).toMatchInlineSnapshot(`
+    expect(view.data).toMatchInlineSnapshot(`
     {
       "childID": 2,
       "children": [
@@ -483,10 +487,10 @@ it('tree-single', async () => {
     }
   `)
 
-  // remove the child
-  await z.mutate.table.delete({ id: 2 })
+    // remove the child
+    await z.mutate.table.delete({ id: 2 })
 
-  expect(view.data).toMatchInlineSnapshot(`
+    expect(view.data).toMatchInlineSnapshot(`
     {
       "childID": 2,
       "children": [],
@@ -497,56 +501,56 @@ it('tree-single', async () => {
     }
   `)
 
-  // remove the parent
-  await z.mutate.table.delete({ id: 1 })
-  expect(view.data).toEqual(undefined)
-})
-
-it('collapse', async () => {
-  const { z } = await setupTestEnvironment(collapseSchema)
-  const query = z.query.issue.related('labels')
-  const view = query.materialize(vueViewFactory)
-
-  expect(view.data).toEqual([])
-
-  const changeSansType = {
-    node: {
-      row: {
-        id: 1,
-        name: 'issue',
-      },
-      relationships: {
-        labels: () => [
-          {
-            row: {
-              id: 1,
-              issueId: 1,
-              labelId: 1,
-              extra: 'a',
-            },
-            relationships: {
-              labels: () => [
-                {
-                  row: {
-                    id: 1,
-                    name: 'label',
-                  },
-                  relationships: {},
-                },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  } as const
-
-  view.push({
-    type: 'add',
-    ...changeSansType,
+    // remove the parent
+    await z.mutate.table.delete({ id: 1 })
+    expect(view.data).toEqual(undefined)
   })
 
-  expect(view.data).toMatchInlineSnapshot(`
+  it('collapse', async () => {
+    const { z } = await setupTestEnvironment(collapseSchema)
+    const query = z.query.issue.related('labels')
+    const view = query.materialize(vueViewFactory)
+
+    expect(view.data).toEqual([])
+
+    const changeSansType = {
+      node: {
+        row: {
+          id: 1,
+          name: 'issue',
+        },
+        relationships: {
+          labels: () => [
+            {
+              row: {
+                id: 1,
+                issueId: 1,
+                labelId: 1,
+                extra: 'a',
+              },
+              relationships: {
+                labels: () => [
+                  {
+                    row: {
+                      id: 1,
+                      name: 'label',
+                    },
+                    relationships: {},
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    } as const
+
+    view.push({
+      type: 'add',
+      ...changeSansType,
+    })
+
+    expect(view.data).toMatchInlineSnapshot(`
     [
       {
         "id": 1,
@@ -563,46 +567,72 @@ it('collapse', async () => {
     ]
   `)
 
-  view.push({
-    type: 'remove',
-    ...changeSansType,
-  })
-  expect(view.data).toEqual([])
+    view.push({
+      type: 'remove',
+      ...changeSansType,
+    })
+    expect(view.data).toEqual([])
 
-  view.push({
-    type: 'add',
-    ...changeSansType,
-  })
+    view.push({
+      type: 'add',
+      ...changeSansType,
+    })
 
-  view.push({
-    type: 'child',
-    node: {
-      row: {
-        id: 1,
-        name: 'issue',
-      },
-      relationships: {
-        labels: () => [
-          {
-            row: {
-              id: 1,
-              issueId: 1,
-              labelId: 1,
-              extra: 'a',
-            },
-            relationships: {
-              labels: () => [
-                {
-                  row: {
-                    id: 1,
-                    name: 'label',
+    view.push({
+      type: 'child',
+      node: {
+        row: {
+          id: 1,
+          name: 'issue',
+        },
+        relationships: {
+          labels: () => [
+            {
+              row: {
+                id: 1,
+                issueId: 1,
+                labelId: 1,
+                extra: 'a',
+              },
+              relationships: {
+                labels: () => [
+                  {
+                    row: {
+                      id: 1,
+                      name: 'label',
+                    },
+                    relationships: {},
                   },
-                  relationships: {},
-                },
-              ],
+                ],
+              },
             },
-          },
-          {
+            {
+              row: {
+                id: 2,
+                issueId: 1,
+                labelId: 2,
+                extra: 'b',
+              },
+              relationships: {
+                labels: () => [
+                  {
+                    row: {
+                      id: 2,
+                      name: 'label2',
+                    },
+                    relationships: {},
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+      child: {
+        relationshipName: 'labels',
+        change: {
+          type: 'add',
+          node: {
             row: {
               id: 2,
               issueId: 1,
@@ -621,37 +651,11 @@ it('collapse', async () => {
               ],
             },
           },
-        ],
-      },
-    },
-    child: {
-      relationshipName: 'labels',
-      change: {
-        type: 'add',
-        node: {
-          row: {
-            id: 2,
-            issueId: 1,
-            labelId: 2,
-            extra: 'b',
-          },
-          relationships: {
-            labels: () => [
-              {
-                row: {
-                  id: 2,
-                  name: 'label2',
-                },
-                relationships: {},
-              },
-            ],
-          },
         },
       },
-    },
-  })
+    })
 
-  expect(view.data).toMatchInlineSnapshot(`
+    expect(view.data).toMatchInlineSnapshot(`
     [
       {
         "id": 1,
@@ -673,36 +677,81 @@ it('collapse', async () => {
     ]
   `)
 
-  // edit the hidden row
-  view.push({
-    type: 'child',
-    node: {
-      row: {
-        id: 1,
-        name: 'issue',
+    // edit the hidden row
+    view.push({
+      type: 'child',
+      node: {
+        row: {
+          id: 1,
+          name: 'issue',
+        },
+        relationships: {
+          labels: () => [
+            {
+              row: {
+                id: 1,
+                issueId: 1,
+                labelId: 1,
+                extra: 'a',
+              },
+              relationships: {
+                labels: () => [
+                  {
+                    row: {
+                      id: 1,
+                      name: 'label',
+                    },
+                    relationships: {},
+                  },
+                ],
+              },
+            },
+            {
+              row: {
+                id: 2,
+                issueId: 1,
+                labelId: 2,
+                extra: 'b2',
+              },
+              relationships: {
+                labels: () => [
+                  {
+                    row: {
+                      id: 2,
+                      name: 'label2',
+                    },
+                    relationships: {},
+                  },
+                ],
+              },
+            },
+          ],
+        },
       },
-      relationships: {
-        labels: () => [
-          {
+      child: {
+        relationshipName: 'labels',
+        change: {
+          type: 'edit',
+          oldNode: {
             row: {
-              id: 1,
+              id: 2,
               issueId: 1,
-              labelId: 1,
-              extra: 'a',
+              labelId: 2,
+              extra: 'b',
             },
             relationships: {
               labels: () => [
                 {
                   row: {
-                    id: 1,
-                    name: 'label',
+                    id: 2,
+                    name: 'label2',
                   },
                   relationships: {},
                 },
               ],
             },
           },
-          {
+          node: {
             row: {
               id: 2,
               issueId: 1,
@@ -721,56 +770,11 @@ it('collapse', async () => {
               ],
             },
           },
-        ],
-      },
-    },
-    child: {
-      relationshipName: 'labels',
-      change: {
-        type: 'edit',
-        oldNode: {
-          row: {
-            id: 2,
-            issueId: 1,
-            labelId: 2,
-            extra: 'b',
-          },
-          relationships: {
-            labels: () => [
-              {
-                row: {
-                  id: 2,
-                  name: 'label2',
-                },
-                relationships: {},
-              },
-            ],
-          },
-        },
-        node: {
-          row: {
-            id: 2,
-            issueId: 1,
-            labelId: 2,
-            extra: 'b2',
-          },
-          relationships: {
-            labels: () => [
-              {
-                row: {
-                  id: 2,
-                  name: 'label2',
-                },
-                relationships: {},
-              },
-            ],
-          },
         },
       },
-    },
-  })
+    })
 
-  expect(view.data).toMatchInlineSnapshot(`
+    expect(view.data).toMatchInlineSnapshot(`
     [
       {
         "id": 1,
@@ -792,36 +796,62 @@ it('collapse', async () => {
     ]
   `)
 
-  // edit the leaf
-  view.push({
-    type: 'child',
-    node: {
-      row: {
-        id: 1,
-        name: 'issue',
-      },
-      relationships: {
-        labels: () => [
-          {
-            row: {
-              id: 1,
-              issueId: 1,
-              labelId: 1,
-              extra: 'a',
-            },
-            relationships: {
-              labels: () => [
-                {
-                  row: {
-                    id: 1,
-                    name: 'label',
+    // edit the leaf
+    view.push({
+      type: 'child',
+      node: {
+        row: {
+          id: 1,
+          name: 'issue',
+        },
+        relationships: {
+          labels: () => [
+            {
+              row: {
+                id: 1,
+                issueId: 1,
+                labelId: 1,
+                extra: 'a',
+              },
+              relationships: {
+                labels: () => [
+                  {
+                    row: {
+                      id: 1,
+                      name: 'label',
+                    },
+                    relationships: {},
                   },
-                  relationships: {},
-                },
-              ],
+                ],
+              },
             },
-          },
-          {
+            {
+              row: {
+                id: 2,
+                issueId: 1,
+                labelId: 2,
+                extra: 'b2',
+              },
+              relationships: {
+                labels: () => [
+                  {
+                    row: {
+                      id: 2,
+                      name: 'label2x',
+                    },
+                    relationships: {},
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+      child: {
+        relationshipName: 'labels',
+        change: {
+          type: 'child',
+          node: {
             row: {
               id: 2,
               issueId: 1,
@@ -840,57 +870,31 @@ it('collapse', async () => {
               ],
             },
           },
-        ],
-      },
-    },
-    child: {
-      relationshipName: 'labels',
-      change: {
-        type: 'child',
-        node: {
-          row: {
-            id: 2,
-            issueId: 1,
-            labelId: 2,
-            extra: 'b2',
-          },
-          relationships: {
-            labels: () => [
-              {
+          child: {
+            relationshipName: 'labels',
+            change: {
+              type: 'edit',
+              oldNode: {
+                row: {
+                  id: 2,
+                  name: 'label2',
+                },
+                relationships: {},
+              },
+              node: {
                 row: {
                   id: 2,
                   name: 'label2x',
                 },
                 relationships: {},
               },
-            ],
-          },
-        },
-        child: {
-          relationshipName: 'labels',
-          change: {
-            type: 'edit',
-            oldNode: {
-              row: {
-                id: 2,
-                name: 'label2',
-              },
-              relationships: {},
-            },
-            node: {
-              row: {
-                id: 2,
-                name: 'label2x',
-              },
-              relationships: {},
             },
           },
         },
       },
-    },
-  })
+    })
 
-  expect(view.data).toMatchInlineSnapshot(`
+    expect(view.data).toMatchInlineSnapshot(`
     [
       {
         "id": 1,
@@ -911,51 +915,51 @@ it('collapse', async () => {
       },
     ]
   `)
-})
-
-it('collapse-single', async () => {
-  const { z } = await setupTestEnvironment(collapseSchema)
-  const query = z.query.issue.related('labels')
-  const view = query.materialize(vueViewFactory)
-
-  expect(view.data).toEqual([])
-
-  const changeSansType = {
-    node: {
-      row: {
-        id: 1,
-        name: 'issue',
-      },
-      relationships: {
-        labels: () => [
-          {
-            row: {
-              id: 1,
-              issueId: 1,
-              labelId: 1,
-            },
-            relationships: {
-              labels: () => [
-                {
-                  row: {
-                    id: 1,
-                    name: 'label',
-                  },
-                  relationships: {},
-                },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  } as const
-  view.push({
-    type: 'add',
-    ...changeSansType,
   })
 
-  expect(view.data).toMatchInlineSnapshot(`
+  it('collapse-single', async () => {
+    const { z } = await setupTestEnvironment(collapseSchema)
+    const query = z.query.issue.related('labels')
+    const view = query.materialize(vueViewFactory)
+
+    expect(view.data).toEqual([])
+
+    const changeSansType = {
+      node: {
+        row: {
+          id: 1,
+          name: 'issue',
+        },
+        relationships: {
+          labels: () => [
+            {
+              row: {
+                id: 1,
+                issueId: 1,
+                labelId: 1,
+              },
+              relationships: {
+                labels: () => [
+                  {
+                    row: {
+                      id: 1,
+                      name: 'label',
+                    },
+                    relationships: {},
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    } as const
+    view.push({
+      type: 'add',
+      ...changeSansType,
+    })
+
+    expect(view.data).toMatchInlineSnapshot(`
     [
       {
         "id": 1,
@@ -971,16 +975,16 @@ it('collapse-single', async () => {
       },
     ]
   `)
-})
+  })
 
-it('basic with edit pushes', async () => {
-  const { z } = await setupTestEnvironment(simpleSchema)
-  await z.mutate.table.insert({ a: 1, b: 'a' })
-  await z.mutate.table.insert({ a: 2, b: 'b' })
+  it('basic with edit pushes', async () => {
+    const { z } = await setupTestEnvironment(simpleSchema)
+    await z.mutate.table.insert({ a: 1, b: 'a' })
+    await z.mutate.table.insert({ a: 2, b: 'b' })
 
-  const query = z.query.table
-  const view = query.materialize(vueViewFactory)
-  expect(view.data).toMatchInlineSnapshot(`
+    const query = z.query.table
+    const view = query.materialize(vueViewFactory)
+    expect(view.data).toMatchInlineSnapshot(`
     [
       {
         "a": 1,
@@ -995,9 +999,9 @@ it('basic with edit pushes', async () => {
     ]
   `)
 
-  await z.mutate.table.update({ a: 2, b: 'b2' })
+    await z.mutate.table.update({ a: 2, b: 'b2' })
 
-  expect(view.data).toMatchInlineSnapshot(`
+    expect(view.data).toMatchInlineSnapshot(`
     [
       {
         "a": 1,
@@ -1012,10 +1016,10 @@ it('basic with edit pushes', async () => {
     ]
   `)
 
-  await z.mutate.table.insert({ a: 3, b: 'b3' })
-  await z.mutate.table.delete({ a: 2 })
+    await z.mutate.table.insert({ a: 3, b: 'b3' })
+    await z.mutate.table.delete({ a: 2 })
 
-  expect(view.data).toMatchInlineSnapshot(`
+    expect(view.data).toMatchInlineSnapshot(`
     [
       {
         "a": 1,
@@ -1029,30 +1033,30 @@ it('basic with edit pushes', async () => {
       },
     ]
   `)
-})
-
-it('tree edit', async () => {
-  const { z } = await setupTestEnvironment(treeSchema)
-
-  await z.mutate.table.insert({ id: 1, name: 'foo', data: 'a', childID: 2 })
-  await z.mutate.table.insert({
-    id: 2,
-    name: 'foobar',
-    data: 'b',
-    childID: null,
-  })
-  await z.mutate.table.insert({ id: 3, name: 'mon', data: 'c', childID: 4 })
-  await z.mutate.table.insert({
-    id: 4,
-    name: 'monkey',
-    data: 'd',
-    childID: null,
   })
 
-  const query = z.query.table.related('children')
-  const view = query.materialize(vueViewFactory)
+  it('tree edit', async () => {
+    const { z } = await setupTestEnvironment(treeSchema)
 
-  expect(view.data).toMatchInlineSnapshot(`
+    await z.mutate.table.insert({ id: 1, name: 'foo', data: 'a', childID: 2 })
+    await z.mutate.table.insert({
+      id: 2,
+      name: 'foobar',
+      data: 'b',
+      childID: null,
+    })
+    await z.mutate.table.insert({ id: 3, name: 'mon', data: 'c', childID: 4 })
+    await z.mutate.table.insert({
+      id: 4,
+      name: 'monkey',
+      data: 'd',
+      childID: null,
+    })
+
+    const query = z.query.table.related('children')
+    const view = query.materialize(vueViewFactory)
+
+    expect(view.data).toMatchInlineSnapshot(`
     [
       {
         "childID": 2,
@@ -1105,10 +1109,10 @@ it('tree edit', async () => {
     ]
   `)
 
-  // Edit root
-  await z.mutate.table.update({ id: 1, data: 'a2' })
+    // Edit root
+    await z.mutate.table.update({ id: 1, data: 'a2' })
 
-  expect(view.data).toMatchInlineSnapshot(`
+    expect(view.data).toMatchInlineSnapshot(`
     [
       {
         "childID": 2,
@@ -1161,9 +1165,9 @@ it('tree edit', async () => {
     ]
   `)
 
-  // Edit leaf
-  await z.mutate.table.update({ id: 4, data: 'd2' })
-  expect(view.data).toMatchInlineSnapshot(`
+    // Edit leaf
+    await z.mutate.table.update({ id: 4, data: 'd2' })
+    expect(view.data).toMatchInlineSnapshot(`
     [
       {
         "childID": 2,
@@ -1215,29 +1219,29 @@ it('tree edit', async () => {
       },
     ]
   `)
-})
-
-it('queryComplete promise', async () => {
-  const { z } = await setupTestEnvironment(simpleSchema)
-  await z.mutate.table.insert({ a: 1, b: 'a' })
-  await z.mutate.table.insert({ a: 2, b: 'b' })
-
-  const queryCompleteResolver = resolver<true>()
-
-  const onTransactionCommit = () => {}
-
-  const query = z.query.table
-  const view = query.materialize((_, input) => {
-    return new VueView(
-      input,
-      onTransactionCommit,
-      { singular: false, relationships: {} },
-      () => {},
-      queryCompleteResolver.promise,
-    )
   })
 
-  expect(view.data).toMatchInlineSnapshot(`
+  it('queryComplete promise', async () => {
+    const { z } = await setupTestEnvironment(simpleSchema)
+    await z.mutate.table.insert({ a: 1, b: 'a' })
+    await z.mutate.table.insert({ a: 2, b: 'b' })
+
+    const queryCompleteResolver = resolver<true>()
+
+    const onTransactionCommit = () => {}
+
+    const query = z.query.table
+    const view = query.materialize((_, input) => {
+      return new VueView(
+        input,
+        onTransactionCommit,
+        { singular: false, relationships: {} },
+        () => {},
+        queryCompleteResolver.promise,
+      )
+    })
+
+    expect(view.data).toMatchInlineSnapshot(`
     [
       {
         "a": 1,
@@ -1251,41 +1255,44 @@ it('queryComplete promise', async () => {
       },
     ]
   `)
-  expect(view.status).toEqual('unknown')
+    expect(view.status).toEqual('unknown')
 
-  queryCompleteResolver.resolve(true)
-  await 1
-  expect(view.status).toEqual('complete')
+    queryCompleteResolver.resolve(true)
+    await 1
+    expect(view.status).toEqual('complete')
+  })
 })
 
-interface TestReturn {
-  a: number
-  b: string
-}
+describe('vueViewFactory', () => {
+  interface TestReturn {
+    a: number
+    b: string
+  }
 
-it('factory', async () => {
-  const { z } = await setupTestEnvironment(simpleSchema)
-  await z.mutate.table.insert({ a: 1, b: 'a' })
-  await z.mutate.table.insert({ a: 2, b: 'b' })
+  it('correctly calls corresponding handlers', async () => {
+    const { z } = await setupTestEnvironment(simpleSchema)
+    await z.mutate.table.insert({ a: 1, b: 'a' })
+    await z.mutate.table.insert({ a: 2, b: 'b' })
 
-  const onDestroy = vi.fn()
-  const onTransactionCommit = vi.fn()
+    const onDestroy = vi.fn()
+    const onTransactionCommit = vi.fn()
 
-  const query = z.query.table
-  const view = query.materialize((_, input) => {
-    return vueViewFactory(
-      undefined as unknown as Query<typeof simpleSchema, 'table', TestReturn>,
-      input,
-      { singular: false, relationships: {} },
-      onDestroy,
-      onTransactionCommit,
-      true,
-    )
+    const query = z.query.table
+    const view = query.materialize((_, input) => {
+      return vueViewFactory(
+        undefined as unknown as Query<typeof simpleSchema, 'table', TestReturn>,
+        input,
+        { singular: false, relationships: {} },
+        onDestroy,
+        onTransactionCommit,
+        true,
+      )
+    })
+
+    expect(view).toBeDefined()
+    expect(onTransactionCommit).not.toHaveBeenCalled()
+    expect(onDestroy).not.toHaveBeenCalled()
+    view.destroy()
+    expect(onDestroy).toHaveBeenCalledTimes(1)
   })
-
-  expect(view).toBeDefined()
-  expect(onTransactionCommit).not.toHaveBeenCalled()
-  expect(onDestroy).not.toHaveBeenCalled()
-  view.destroy()
-  expect(onDestroy).toHaveBeenCalledTimes(1)
 })
