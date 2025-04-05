@@ -166,6 +166,8 @@ describe('vueView', () => {
     await z.mutate.table.delete({ a: 3 })
 
     expect(view.data).toEqual([])
+
+    z.close()
   })
 
   it.skip('basics-perf', async () => {
@@ -182,6 +184,8 @@ describe('vueView', () => {
     }
 
     expect(view.data.length).toBe(iterations)
+
+    z.close()
   })
 
   it('hydrate-empty', async () => {
@@ -191,6 +195,8 @@ describe('vueView', () => {
     const view = tableQuery.materialize(vueViewFactory)
 
     expect(view.data).toEqual([])
+
+    z.close()
   })
 
   it('tree', async () => {
@@ -504,6 +510,8 @@ describe('vueView', () => {
     // remove the parent
     await z.mutate.table.delete({ id: 1 })
     expect(view.data).toEqual(undefined)
+
+    z.close()
   })
 
   it('collapse', async () => {
@@ -915,6 +923,8 @@ describe('vueView', () => {
       },
     ]
   `)
+
+    z.close()
   })
 
   it('collapse-single', async () => {
@@ -975,6 +985,8 @@ describe('vueView', () => {
       },
     ]
   `)
+
+    z.close()
   })
 
   it('basic with edit pushes', async () => {
@@ -1033,6 +1045,8 @@ describe('vueView', () => {
       },
     ]
   `)
+
+    z.close()
   })
 
   it('tree edit', async () => {
@@ -1219,6 +1233,8 @@ describe('vueView', () => {
       },
     ]
   `)
+
+    z.close()
   })
 
   it('queryComplete promise', async () => {
@@ -1260,6 +1276,8 @@ describe('vueView', () => {
     queryCompleteResolver.resolve(true)
     await 1
     expect(view.status).toEqual('complete')
+
+    z.close()
   })
 })
 
@@ -1294,5 +1312,7 @@ describe('vueViewFactory', () => {
     expect(onDestroy).not.toHaveBeenCalled()
     view.destroy()
     expect(onDestroy).toHaveBeenCalledTimes(1)
+
+    z.close()
   })
 })

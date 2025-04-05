@@ -76,10 +76,12 @@ describe('useQuery', () => {
 
     // TODO: this is not working at the moment, possibly because we don't have a server connection in test
     // expect(resultType.value).toEqual("complete");
+
+    z.close()
   })
 
   it('useQuery with ttl', async () => {
-    const { tableQuery } = await setupTestEnvironment()
+    const { z, tableQuery } = await setupTestEnvironment()
     const ttl = ref<TTL>('1m')
 
     const materializeSpy = vi.spyOn(tableQuery, 'materialize')
@@ -101,10 +103,12 @@ describe('useQuery', () => {
 
     expect(materializeSpy).toHaveBeenCalledTimes(0)
     expect(updateTTLSpy).toHaveBeenCalledExactlyOnceWith('10m')
+
+    z.close()
   })
 
   it('useQuery deps change', async () => {
-    const { tableQuery } = await setupTestEnvironment()
+    const { z, tableQuery } = await setupTestEnvironment()
 
     const a = ref(1)
 
@@ -160,6 +164,8 @@ describe('useQuery', () => {
 
     expect(rowLog).toEqual([])
     // expect(resultDetailsLog).toEqual(["complete"]);
+
+    z.close()
   })
 
   it('useQuery deps change watchEffect', async () => {
@@ -210,5 +216,7 @@ describe('useQuery', () => {
         run++
       })
     })
+
+    z.close()
   })
 })
