@@ -1,1 +1,1 @@
-export { useQuery } from './query'
+export { useQuery, type UseQueryOptions } from './query'
