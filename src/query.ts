@@ -1,7 +1,6 @@
 // based on https://github.com/rocicorp/mono/tree/main/packages/zero-solid
 
-import type { HumanReadable, Query, ResultType, Schema } from '@rocicorp/zero'
-import type { UseQueryOptions } from '@rocicorp/zero/solid'
+import type { HumanReadable, Query, ResultType, Schema, TTL } from '@rocicorp/zero'
 import type { ComputedRef, MaybeRefOrGetter } from 'vue'
 import type { VueView } from './view'
 
@@ -15,6 +14,10 @@ import {
   watch,
 } from 'vue'
 import { vueViewFactory } from './view'
+
+export interface UseQueryOptions {
+  ttl?: TTL | undefined
+}
 
 interface QueryResult<TReturn> {
   data: ComputedRef<HumanReadable<TReturn>>
