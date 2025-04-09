@@ -53,11 +53,6 @@
     "vitest": "latest",
     "vue": "3.5.13"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@rocicorp/zero-sqlite3"
-    ]
-  },
   "resolutions": {
     "zero-vue": "link:."
   },

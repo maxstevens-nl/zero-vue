@@ -1,2 +1,5 @@
 packages:
   - playground
+onlyBuiltDependencies:
+  - '@rocicorp/zero-sqlite3'
+  - 'simple-git-hooks'
