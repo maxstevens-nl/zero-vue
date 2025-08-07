@@ -12,7 +12,7 @@ importers:
   .:
     dependencies:
       '@rocicorp/zero':
-        specifier: ^0.22.0
+        specifier: '>=0.18.0 <0.23.0'
         version: 0.22.2025080200(@opentelemetry/core@2.0.1(@opentelemetry/api@1.9.0))(typescript@5.9.2)
     devDependencies:
       '@antfu/eslint-config':
