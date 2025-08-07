@@ -14,7 +14,7 @@ import {
 } from 'vue'
 import { vueViewFactory } from './view'
 
-export const DEFAULT_TTL_MS = 1_000 * 60 * 5
+const DEFAULT_TTL_MS = 1_000 * 60 * 5
 
 export interface UseQueryOptions {
   ttl?: TTL | undefined
