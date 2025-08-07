@@ -4,7 +4,6 @@ import type { HumanReadable, Query, ResultType, Schema, TTL } from '@rocicorp/ze
 import type { ComputedRef, MaybeRefOrGetter } from 'vue'
 import type { VueView } from './view'
 
-import { DEFAULT_TTL } from '@rocicorp/zero'
 import {
   computed,
   getCurrentInstance,
@@ -14,6 +13,8 @@ import {
   watch,
 } from 'vue'
 import { vueViewFactory } from './view'
+
+export const DEFAULT_TTL_MS = 1_000 * 60 * 5
 
 export interface UseQueryOptions {
   ttl?: TTL | undefined
@@ -33,7 +34,7 @@ export function useQuery<
   options?: MaybeRefOrGetter<UseQueryOptions>,
 ): QueryResult<TReturn> {
   const ttl = computed(() => {
-    return toValue(options)?.ttl ?? DEFAULT_TTL
+    return toValue(options)?.ttl ?? DEFAULT_TTL_MS
   })
   const view = shallowRef<VueView<HumanReadable<TReturn>> | null>(null)
 
