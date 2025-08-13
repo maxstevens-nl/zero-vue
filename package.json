@@ -32,8 +32,10 @@
     "test:types": "tsc --noEmit && pnpm -r test:types"
   },
   "peerDependencies": {
-    "@rocicorp/zero": "^0.22.0",
     "vue": "^3.5.13"
+  },
+  "dependencies": {
+    "@rocicorp/zero": "^0.22.0"
   },
   "devDependencies": {
     "@antfu/eslint-config": "latest",
