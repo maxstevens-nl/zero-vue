@@ -40,10 +40,12 @@
   "devDependencies": {
     "@antfu/eslint-config": "latest",
     "@rocicorp/resolver": "1.0.2",
+    "@testing-library/vue": "^8.1.0",
     "@vitest/coverage-v8": "latest",
     "bumpp": "latest",
     "changelogithub": "13.16.0",
     "eslint": "latest",
+    "happy-dom": "^18.0.1",
     "installed-check": "latest",
     "knip": "latest",
     "lint-staged": "latest",

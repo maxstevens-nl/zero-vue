@@ -7,11 +7,13 @@ import type { VueView } from './view'
 import {
   computed,
   getCurrentInstance,
+  inject,
   onUnmounted,
   shallowRef,
   toValue,
   watch,
 } from 'vue'
+import { zeroSymbol } from './create-zero'
 import { vueViewFactory } from './view'
 
 const DEFAULT_TTL_MS = 1_000 * 60 * 5
@@ -38,11 +40,16 @@ export function useQuery<
   })
   const view = shallowRef<VueView<HumanReadable<TReturn>> | null>(null)
 
+  const z = inject(zeroSymbol)
+  if (!z) {
+    throw new Error('Zero not found. Did you forget to call app.use(createZero())?')
+  }
+
   watch(
     () => toValue(query),
     (q) => {
       view.value?.destroy()
-      view.value = q.materialize(vueViewFactory, ttl.value)
+      view.value = z.value.materialize(q, vueViewFactory, { ttl: ttl.value })
     },
     { immediate: true },
   )
