@@ -1,9 +1,25 @@
 import type { TTL } from '@rocicorp/zero'
-import { createSchema, number, string, table, Zero } from '@rocicorp/zero'
+import { createBuilder, createSchema, number, string, syncedQuery, table, Zero } from '@rocicorp/zero'
 import { describe, expect, it, vi } from 'vitest'
-import { ref, watchEffect } from 'vue'
+import { createApp, nextTick, onMounted, ref, shallowRef, watchEffect } from 'vue'
+import { createUseZero } from './create-use-zero'
+import { createZero } from './create-zero'
 import { useQuery } from './query'
 import { VueView, vueViewFactory } from './view'
+
+export function withSetup<T>(composable: () => T) {
+  const result = shallowRef<T>()
+  const app = createApp({
+    setup() {
+      onMounted(() => {
+        result.value = composable()
+      })
+
+      return () => {}
+    },
+  })
+  return [result, app] as const
+}
 
 async function setupTestEnvironment() {
   const schema = createSchema({
@@ -16,22 +32,41 @@ async function setupTestEnvironment() {
         .primaryKey('a'),
     ],
   })
+  const builder = createBuilder(schema)
 
-  const z = new Zero({
+  const useZero = createUseZero<typeof schema>()
+  const [zero, app] = withSetup(useZero)
+  app.use(createZero({
     userID: 'asdf',
     server: null,
     schema,
     // This is often easier to develop with if you're frequently changing
     // the schema. Switch to 'idb' for local-persistence.
     kvStore: 'mem',
-  })
+  }))
+  app.mount(document.createElement('div'))
+
+  const z = zero.value!.value
 
   await z.mutate.table.insert({ a: 1, b: 'a' })
   await z.mutate.table.insert({ a: 2, b: 'b' })
 
+  const byIdQuery = syncedQuery(
+    'byId',
+    ([id]) => {
+      if (typeof id !== 'number') {
+        throw new TypeError('id must be a number')
+      }
+      return [id] as const
+    },
+    (id: number) => {
+      return builder.table.where('a', id)
+    },
+  )
+
   const tableQuery = z.query.table
 
-  return { z, tableQuery }
+  return { z, tableQuery, byIdQuery }
 }
 
 describe('useQuery', () => {
@@ -112,7 +147,7 @@ describe('useQuery', () => {
     z.close()
   })
 
-  it('useQuery with ttl (zero@0.19)', async () => {
+  it.only('useQuery with ttl (zero@0.19)', async () => {
     const { z, tableQuery } = await setupTestEnvironment()
     if ('updateTTL' in tableQuery) {
       // 0.19 removed updateTTL from the query
@@ -255,6 +290,25 @@ describe('useQuery', () => {
         run++
       })
     })
+
+    z.close()
+  })
+
+  it.skip('useQuery with syncedQuery', async () => {
+    const { z, byIdQuery } = await setupTestEnvironment()
+
+    const a = ref(1)
+    const { data: rows, status } = useQuery(() => byIdQuery(a.value))
+
+    expect(rows.value).toMatchInlineSnapshot(`
+[
+  {
+    "a": 1,
+    "b": "a",
+    Symbol(rc): 1,
+  },
+]`)
+    expect(status.value).toEqual('unknown')
 
     z.close()
   })
