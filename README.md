@@ -19,6 +19,17 @@ npm install zero-vue
 pnpm install zero-vue
 ```
 
+Register plugin:
+
+```js
+import { createApp } from 'vue'
+import { createZero } from 'zero-vue'
+
+const app = createApp(App)
+app.use(createZero())
+```
+
+Use `useQuery`:
 ```js
 import { Zero } from '@rocicorp/zero'
 import { useQuery } from 'zero-vue'
@@ -32,6 +43,15 @@ const z = new Zero({
 })
 
 const { data: users } = useQuery(z.query.user)
+```
+
+Optional: typing `useZero`:
+```ts
+import { createUseZero } from 'zero-vue';
+import type { Schema } from './schema.ts';
+import type { Mutators } from './mutators.ts';
+export const useZero = createUseZero<Schema, Mutators>();
+const z = useZero(); // z is typed with your own schema and mutators
 ```
 
 > [!TIP]
