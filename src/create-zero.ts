@@ -5,7 +5,7 @@ import { shallowRef, toValue, watch } from 'vue'
 
 export const zeroSymbol = Symbol('zero') as InjectionKey<ShallowRef<Zero<Schema, undefined>>>
 
-const oldZeroCleanups = new Set()
+const zeroCleanups = new Set()
 
 export function createZero<S extends Schema = Schema, MD extends CustomMutatorDefs | undefined = undefined>(optsOrZero: MaybeRefOrGetter<ZeroOptions<S, MD> | { zero: Zero<S, MD> }>) {
   const z = shallowRef() as ShallowRef<Zero<S, MD>>
@@ -15,9 +15,9 @@ export function createZero<S extends Schema = Schema, MD extends CustomMutatorDe
 
   watch(() => toValue(optsOrZero), (opts) => {
     const cleanupZeroPromise = z.value.close()
-    oldZeroCleanups.add(cleanupZeroPromise)
+    zeroCleanups.add(cleanupZeroPromise)
     cleanupZeroPromise.finally(() => {
-      oldZeroCleanups.delete(cleanupZeroPromise)
+      zeroCleanups.delete(cleanupZeroPromise)
     })
 
     z.value = 'zero' in opts ? opts.zero : new Zero(opts)
@@ -25,7 +25,7 @@ export function createZero<S extends Schema = Schema, MD extends CustomMutatorDe
 
   return {
     install: (app: App) => {
-      // @ts-expect-error - TODO: type properly
+      // @ts-expect-error - The type of z doesn't line up with the type of zeroSymbol.
       app.provide(zeroSymbol, z)
     },
   }
