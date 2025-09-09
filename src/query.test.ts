@@ -91,7 +91,7 @@ async function setupTestEnvironment(registerPlugin = true) {
 describe('useQuery', () => {
   it('useQuery', async () => {
     const { z, tableQuery, app } = await setupTestEnvironment()
-    await app!.runWithContext(async () => {
+    await app.runWithContext(async () => {
       const { data: rows, status } = useQuery(() => tableQuery)
       expect(rows.value).toMatchInlineSnapshot(`[
   {
@@ -142,7 +142,7 @@ describe('useQuery', () => {
       return
     }
 
-    await app!.runWithContext(async () => {
+    await app.runWithContext(async () => {
       const ttl = ref<TTL>('1m')
 
       const materializeSpy = vi.spyOn(tableQuery, 'materialize')
@@ -177,7 +177,7 @@ describe('useQuery', () => {
       return
     }
 
-    await app!.runWithContext(async () => {
+    await app.runWithContext(async () => {
       const ttl = ref<TTL>('1m')
 
       let materializeSpy: MockInstance
@@ -228,7 +228,7 @@ describe('useQuery', () => {
   it('useQuery deps change', async () => {
     const { z, tableQuery, app } = await setupTestEnvironment()
 
-    await app!.runWithContext(async () => {
+    await app.runWithContext(async () => {
       const a = ref(1)
 
       const { data: rows, status } = useQuery(() =>
@@ -290,7 +290,7 @@ describe('useQuery', () => {
 
   it('useQuery deps change watchEffect', async () => {
     const { z, tableQuery, app } = await setupTestEnvironment()
-    await app!.runWithContext(async () => {
+    await app.runWithContext(async () => {
       const a = ref(1)
       const { data: rows } = useQuery(() => tableQuery.where('a', a.value))
 
@@ -348,7 +348,7 @@ describe('useQuery', () => {
       return
     }
 
-    app!.runWithContext(() => {
+    app.runWithContext(() => {
       const a = ref(1)
       const { data: rows, status } = useQuery(() => byIdQuery(a.value))
 
