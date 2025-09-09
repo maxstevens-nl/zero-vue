@@ -1,7 +1,8 @@
 import type { TTL } from '@rocicorp/zero'
-import { createBuilder, createSchema, number, string, syncedQuery, table, Zero } from '@rocicorp/zero'
+import type { MockInstance } from 'vitest'
+import { createBuilder, createSchema, number, string, syncedQuery, table } from '@rocicorp/zero'
 import { describe, expect, it, vi } from 'vitest'
-import { createApp, nextTick, onMounted, ref, shallowRef, watchEffect } from 'vue'
+import { computed, createApp, nextTick, onMounted, ref, shallowRef, watchEffect } from 'vue'
 import { createUseZero } from './create-use-zero'
 import { createZero } from './create-zero'
 import { useQuery } from './query'
@@ -32,49 +33,50 @@ async function setupTestEnvironment() {
         .primaryKey('a'),
     ],
   })
-  const builder = createBuilder(schema)
 
   const useZero = createUseZero<typeof schema>()
   const [zero, app] = withSetup(useZero)
-  app.use(createZero({
-    userID: 'asdf',
+  const userID = ref('asdf')
+  app.use(createZero(() => ({
+    userID: userID.value,
     server: null,
     schema,
-    // This is often easier to develop with if you're frequently changing
-    // the schema. Switch to 'idb' for local-persistence.
     kvStore: 'mem',
-  }))
+  })))
   app.mount(document.createElement('div'))
 
-  const z = zero.value!.value
+  const z = computed(() => zero.value!.value)
 
-  await z.mutate.table.insert({ a: 1, b: 'a' })
-  await z.mutate.table.insert({ a: 2, b: 'b' })
+  await z!.value.mutate.table.insert({ a: 1, b: 'a' })
+  await z!.value.mutate.table.insert({ a: 2, b: 'b' })
 
-  const byIdQuery = syncedQuery(
-    'byId',
-    ([id]) => {
-      if (typeof id !== 'number') {
-        throw new TypeError('id must be a number')
-      }
-      return [id] as const
-    },
-    (id: number) => {
-      return builder.table.where('a', id)
-    },
-  )
+  const builder = createBuilder(schema)
+  const byIdQuery = syncedQuery
+    ? syncedQuery(
+        'byId',
+        ([id]) => {
+          if (typeof id !== 'number') {
+            throw new TypeError('id must be a number')
+          }
+          return [id] as const
+        },
+        (id: number) => {
+          return builder.table.where('a', id)
+        },
+      )
+    : undefined
 
-  const tableQuery = z.query.table
+  const tableQuery = z!.value.query.table
 
-  return { z, tableQuery, byIdQuery }
+  return { z, tableQuery, byIdQuery, app, userID }
 }
 
 describe('useQuery', () => {
   it('useQuery', async () => {
-    const { z, tableQuery } = await setupTestEnvironment()
-
-    const { data: rows, status } = useQuery(() => tableQuery)
-    expect(rows.value).toMatchInlineSnapshot(`[
+    const { z, tableQuery, app } = await setupTestEnvironment()
+    await app.runWithContext(async () => {
+      const { data: rows, status } = useQuery(() => tableQuery)
+      expect(rows.value).toMatchInlineSnapshot(`[
   {
     "a": 1,
     "b": "a",
@@ -86,12 +88,12 @@ describe('useQuery', () => {
     Symbol(rc): 1,
   },
 ]`)
-    expect(status.value).toEqual('unknown')
+      expect(status.value).toEqual('unknown')
 
-    await z.mutate.table.insert({ a: 3, b: 'c' })
-    await 1
+      await z.value.mutate.table.insert({ a: 3, b: 'c' })
+      await 1
 
-    expect(rows.value).toMatchInlineSnapshot(`[
+      expect(rows.value).toMatchInlineSnapshot(`[
   {
     "a": 1,
     "b": "a",
@@ -109,103 +111,129 @@ describe('useQuery', () => {
   },
 ]`)
 
-    // TODO: this is not working at the moment, possibly because we don't have a server connection in test
-    // expect(resultType.value).toEqual("complete");
+      // TODO: this is not working at the moment, possibly because we don't have a server connection in test
+      // expect(resultType.value).toEqual("complete");
 
-    z.close()
+      z.value.close()
+    })
   })
 
   it('useQuery with ttl (zero@0.18)', async () => {
-    const { z, tableQuery } = await setupTestEnvironment()
+    const { z, tableQuery, app } = await setupTestEnvironment()
     if (!('updateTTL' in tableQuery)) {
       // 0.19 removed updateTTL from the query
       return
     }
-    const ttl = ref<TTL>('1m')
 
-    const materializeSpy = vi.spyOn(tableQuery, 'materialize')
-    // @ts-expect-error missing from v0.19+
-    const updateTTLSpy = vi.spyOn(tableQuery, 'updateTTL')
-    const queryGetter = vi.fn(() => tableQuery)
+    await app.runWithContext(async () => {
+      const ttl = ref<TTL>('1m')
 
-    useQuery(queryGetter, () => ({ ttl: ttl.value }))
+      const materializeSpy = vi.spyOn(tableQuery, 'materialize')
+      // @ts-expect-error missing from v0.19+
+      const updateTTLSpy = vi.spyOn(tableQuery, 'updateTTL')
+      const queryGetter = vi.fn(() => tableQuery)
 
-    expect(queryGetter).toHaveBeenCalledTimes(1)
-    expect(updateTTLSpy).toHaveBeenCalledTimes(0)
-    expect(materializeSpy).toHaveBeenCalledExactlyOnceWith(
-      vueViewFactory,
-      '1m',
-    )
-    materializeSpy.mockClear()
+      useQuery(queryGetter, () => ({ ttl: ttl.value }))
 
-    ttl.value = '10m'
-    await 1
+      expect(queryGetter).toHaveBeenCalledTimes(1)
+      expect(updateTTLSpy).toHaveBeenCalledTimes(0)
+      expect(materializeSpy).toHaveBeenCalledExactlyOnceWith(
+        vueViewFactory,
+        '1m',
+      )
+      materializeSpy.mockClear()
 
-    expect(materializeSpy).toHaveBeenCalledTimes(0)
-    expect(updateTTLSpy).toHaveBeenCalledExactlyOnceWith('10m')
+      ttl.value = '10m'
+      await 1
 
-    z.close()
+      expect(materializeSpy).toHaveBeenCalledTimes(0)
+      expect(updateTTLSpy).toHaveBeenCalledExactlyOnceWith('10m')
+
+      z.value.close()
+    })
   })
 
-  it.only('useQuery with ttl (zero@0.19)', async () => {
-    const { z, tableQuery } = await setupTestEnvironment()
+  it('useQuery with ttl (zero@0.19)', async () => {
+    const { z, tableQuery, app } = await setupTestEnvironment()
     if ('updateTTL' in tableQuery) {
       // 0.19 removed updateTTL from the query
       return
     }
 
-    const ttl = ref<TTL>('1m')
+    await app.runWithContext(async () => {
+      const ttl = ref<TTL>('1m')
 
-    const materializeSpy = vi.spyOn(tableQuery, 'materialize')
+      let materializeSpy: MockInstance
+      // @ts-expect-error only present in v0.23+
+      if (z.value.materialize) {
+        materializeSpy = vi.spyOn(z.value, 'materialize')
+      }
+      else {
+        materializeSpy = vi.spyOn(tableQuery, 'materialize')
+      }
 
-    const queryGetter = vi.fn(() => tableQuery)
+      const queryGetter = vi.fn(() => tableQuery)
 
-    useQuery(queryGetter, () => ({ ttl: ttl.value }))
-    expect(queryGetter).toHaveBeenCalledTimes(1)
-    expect(materializeSpy).toHaveBeenCalledExactlyOnceWith(
-      vueViewFactory,
-      '1m',
-    )
-    expect(materializeSpy).toHaveLastReturnedWith(expect.any(VueView))
-    const view: VueView<unknown> = materializeSpy.mock.results[0]!.value
-    const updateTTLSpy = vi.spyOn(view, 'updateTTL')
+      useQuery(queryGetter, () => ({ ttl: ttl.value }))
+      expect(queryGetter).toHaveBeenCalledTimes(1)
 
-    materializeSpy.mockClear()
+      expect(materializeSpy).toHaveLastReturnedWith(expect.any(VueView))
+      // @ts-expect-error only present in v0.23+
+      if (z.value.materialize) {
+        expect(materializeSpy).toHaveBeenCalledExactlyOnceWith(
+          tableQuery,
+          vueViewFactory,
+          { ttl: '1m' },
+        )
+      }
+      else {
+        expect(materializeSpy).toHaveBeenCalledExactlyOnceWith(
+          vueViewFactory,
+          '1m',
+        )
+      }
 
-    ttl.value = '10m'
-    await 1
+      const view: VueView<unknown> = materializeSpy.mock.results[0]!.value
+      const updateTTLSpy = vi.spyOn(view, 'updateTTL')
 
-    expect(materializeSpy).toHaveBeenCalledTimes(0)
-    expect(updateTTLSpy).toHaveBeenCalledExactlyOnceWith('10m')
+      materializeSpy.mockClear()
 
-    z.close()
+      ttl.value = '10m'
+      await 1
+
+      expect(materializeSpy).toHaveBeenCalledTimes(0)
+      expect(updateTTLSpy).toHaveBeenCalledExactlyOnceWith('10m')
+
+      z.value.close()
+    })
   })
 
   it('useQuery deps change', async () => {
-    const { z, tableQuery } = await setupTestEnvironment()
+    const { z, tableQuery, app } = await setupTestEnvironment()
 
-    const a = ref(1)
+    await app.runWithContext(async () => {
+      const a = ref(1)
 
-    const { data: rows, status } = useQuery(() =>
-      tableQuery.where('a', a.value),
-    )
+      const { data: rows, status } = useQuery(() =>
+        tableQuery.where('a', a.value),
+      )
 
-    const rowLog: unknown[] = []
-    const resultDetailsLog: unknown[] = []
-    const resetLogs = () => {
-      rowLog.length = 0
-      resultDetailsLog.length = 0
-    }
+      const rowLog: unknown[] = []
+      const resultDetailsLog: unknown[] = []
+      const resetLogs = () => {
+        rowLog.length = 0
+        resultDetailsLog.length = 0
+      }
 
-    watchEffect(() => {
-      rowLog.push(rows.value)
-    })
+      watchEffect(() => {
+        rowLog.push(rows.value)
+      })
 
-    watchEffect(() => {
-      resultDetailsLog.push(status.value)
-    })
+      watchEffect(() => {
+        resultDetailsLog.push(status.value)
+      })
 
-    expect(rowLog).toMatchInlineSnapshot(`[
+      expect(rowLog).toMatchInlineSnapshot(`[
   [
     {
       "a": 1,
@@ -214,17 +242,17 @@ describe('useQuery', () => {
     },
   ],
 ]`)
-    // expect(resultDetailsLog).toEqual(["unknown"]);
-    resetLogs()
+      // expect(resultDetailsLog).toEqual(["unknown"]);
+      resetLogs()
 
-    expect(rowLog).toEqual([])
-    // expect(resultDetailsLog).toEqual(["complete"]);
-    resetLogs()
+      expect(rowLog).toEqual([])
+      // expect(resultDetailsLog).toEqual(["complete"]);
+      resetLogs()
 
-    a.value = 2
-    await 1
+      a.value = 2
+      await 1
 
-    expect(rowLog).toMatchInlineSnapshot(`[
+      expect(rowLog).toMatchInlineSnapshot(`[
   [
     {
       "a": 2,
@@ -233,74 +261,81 @@ describe('useQuery', () => {
     },
   ],
 ]`)
-    // expect(resultDetailsLog).toEqual(["unknown"]);
-    resetLogs()
+      // expect(resultDetailsLog).toEqual(["unknown"]);
+      resetLogs()
 
-    expect(rowLog).toEqual([])
-    // expect(resultDetailsLog).toEqual(["complete"]);
+      expect(rowLog).toEqual([])
+      // expect(resultDetailsLog).toEqual(["complete"]);
 
-    z.close()
+      z.value.close()
+    })
   })
 
   it('useQuery deps change watchEffect', async () => {
-    const { z, tableQuery } = await setupTestEnvironment()
-    const a = ref(1)
-    const { data: rows } = useQuery(() => tableQuery.where('a', a.value))
+    const { z, tableQuery, app } = await setupTestEnvironment()
+    await app.runWithContext(async () => {
+      const a = ref(1)
+      const { data: rows } = useQuery(() => tableQuery.where('a', a.value))
 
-    let run = 0
+      let run = 0
 
-    await new Promise((resolve) => {
-      watchEffect(() => {
-        if (run === 0) {
-          expect(rows.value).toMatchInlineSnapshot(
-            `[
+      await new Promise((resolve) => {
+        watchEffect(() => {
+          if (run === 0) {
+            expect(rows.value).toMatchInlineSnapshot(
+              `[
   {
     "a": 1,
     "b": "a",
     Symbol(rc): 1,
   },
 ]`,
-          )
-          z.mutate.table.update({ a: 1, b: 'a2' })
-        }
-        else if (run === 1) {
-          expect(rows.value).toMatchInlineSnapshot(
-            `[
+            )
+            z.value.mutate.table.update({ a: 1, b: 'a2' })
+          }
+          else if (run === 1) {
+            expect(rows.value).toMatchInlineSnapshot(
+              `[
   {
     "a": 1,
     "b": "a2",
     Symbol(rc): 1,
   },
 ]`,
-          )
-          a.value = 2
-        }
-        else if (run === 2) {
-          expect(rows.value).toMatchInlineSnapshot(
-            `[
+            )
+            a.value = 2
+          }
+          else if (run === 2) {
+            expect(rows.value).toMatchInlineSnapshot(
+              `[
   {
     "a": 2,
     "b": "b",
     Symbol(rc): 1,
   },
 ]`,
-          )
-          resolve(true)
-        }
-        run++
+            )
+            resolve(true)
+          }
+          run++
+        })
       })
-    })
 
-    z.close()
+      z.value.close()
+    })
   })
 
-  it.skip('useQuery with syncedQuery', async () => {
-    const { z, byIdQuery } = await setupTestEnvironment()
+  it('useQuery with syncedQuery', async () => {
+    const { z, byIdQuery, app } = await setupTestEnvironment()
+    if (!byIdQuery) {
+      return
+    }
 
-    const a = ref(1)
-    const { data: rows, status } = useQuery(() => byIdQuery(a.value))
+    app.runWithContext(() => {
+      const a = ref(1)
+      const { data: rows, status } = useQuery(() => byIdQuery(a.value))
 
-    expect(rows.value).toMatchInlineSnapshot(`
+      expect(rows.value).toMatchInlineSnapshot(`
 [
   {
     "a": 1,
@@ -308,8 +343,30 @@ describe('useQuery', () => {
     Symbol(rc): 1,
   },
 ]`)
+      expect(status.value).toEqual('unknown')
+
+      z.value.close()
+    })
+  })
+
+  it('useQuery can be used without plugin (dropped in future versions)', async () => {
+    const { z, tableQuery } = await setupTestEnvironment()
+
+    const { data: rows, status } = useQuery(() => tableQuery)
+    expect(rows.value).toMatchInlineSnapshot(`[
+  {
+    "a": 1,
+    "b": "a",
+    Symbol(rc): 1,
+  },
+  {
+    "a": 2,
+    "b": "b",
+    Symbol(rc): 1,
+  },
+]`)
     expect(status.value).toEqual('unknown')
 
-    z.close()
+    z.value.close()
   })
 })

@@ -40,16 +40,23 @@ export function useQuery<
   })
   const view = shallowRef<VueView<HumanReadable<TReturn>> | null>(null)
 
-  const z = inject(zeroSymbol)
+  const z = zeroSymbol ? inject(zeroSymbol) : null
   if (!z) {
-    throw new Error('Zero not found. Did you forget to call app.use(createZero())?')
+    console.warn('Zero-vue plugin not found, make sure to call app.use(createZero()). This is required in order to use Synced Queries, and not doing this will throw an error in future releases.')
   }
 
   watch(
-    () => toValue(query),
-    (q) => {
+    [() => toValue(query), () => z],
+    ([q, z]) => {
       view.value?.destroy()
-      view.value = z.value.materialize(q, vueViewFactory, { ttl: ttl.value })
+
+      // Only present in v0.23+
+      if (z && z.value.materialize) {
+        view.value = z.value.materialize(q, vueViewFactory, { ttl: ttl.value })
+        return
+      }
+
+      view.value = q.materialize(vueViewFactory, ttl.value)
     },
     { immediate: true },
   )
