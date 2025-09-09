@@ -20,39 +20,57 @@ pnpm install zero-vue
 ```
 
 Register plugin:
-
 ```js
 import { createApp } from 'vue'
 import { createZero } from 'zero-vue'
 
 const app = createApp(App)
-app.use(createZero())
-```
-
-Use `useQuery`:
-```js
-import { Zero } from '@rocicorp/zero'
-import { useQuery } from 'zero-vue'
-
-// see docs: https://zero.rocicorp.dev/docs/introduction
-const z = new Zero({
+// see docs for all options: https://zero.rocicorp.dev/docs/introduction
+app.use(createZero({
   userID,
   server: import.meta.env.VITE_PUBLIC_SERVER,
   schema,
   kvStore: 'mem',
-})
+}))
 
-const { data: users } = useQuery(z.query.user)
+// With computed options:
+app.use(createZero(() => ({
+  userID: userID.value,
+  server: import.meta.env.VITE_PUBLIC_SERVER,
+  schema,
+  kvStore: 'mem',
+})))
+
+// Or with a Zero instance:
+app.use(createZero(new Zero({
+  userID,
+  server: import.meta.env.VITE_PUBLIC_SERVER,
+  schema,
+  kvStore: 'mem',
+})))
 ```
 
-Optional: typing `useZero`:
+Creating `useZero` composable:
 ```ts
-import { createUseZero } from 'zero-vue';
-import type { Schema } from './schema.ts';
-import type { Mutators } from './mutators.ts';
-export const useZero = createUseZero<Schema, Mutators>();
-const z = useZero(); // z is typed with your own schema and mutators
+// Typed:
+import { createUseZero } from 'zero-vue'
+import type { Schema } from './schema.ts'
+import type { Mutators } from './mutators.ts'
+export const useZero = createUseZero<Schema, Mutators>()
+
+// Untyped:
+import { createUseZero } from 'zero-vue'
+export const useZero = createUseZero()
 ```
+
+To query data:
+```js
+import { useQuery } from 'zero-vue'
+import { useZero } from './use-zero.ts'
+const z = useZero()
+const { data: users } = useQuery(z.value.query.user)
+```
+
 
 > [!TIP]
 > See [the playground](./playground) for a full working example based on [rocicorp/hello-zero](https://github.com/rocicorp/hello-zero), or check out [danielroe/hello-zero-nuxt](https://github.com/danielroe/hello-zero-nuxt) to see how to set things up with [Nuxt](https://nuxt.com/).
