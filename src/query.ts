@@ -7,6 +7,7 @@ import type { VueView } from './view'
 import {
   computed,
   getCurrentInstance,
+  hasInjectionContext,
   inject,
   onUnmounted,
   shallowRef,
@@ -40,8 +41,11 @@ export function useQuery<
   })
   const view = shallowRef<VueView<HumanReadable<TReturn>> | null>(null)
 
-  const z = zeroSymbol ? inject(zeroSymbol) : null
-  if (!z) {
+  const z = zeroSymbol && hasInjectionContext() ? inject(zeroSymbol) : null
+  if (!hasInjectionContext()) {
+    console.warn('Not currently in an injection context (we can\'t call `inject` here). In the future this will throw an error.')
+  }
+  else if (!z) {
     console.warn('Zero-vue plugin not found, make sure to call app.use(createZero()). This is required in order to use Synced Queries, and not doing this will throw an error in future releases.')
   }
 

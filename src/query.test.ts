@@ -1,10 +1,11 @@
 import type { TTL } from '@rocicorp/zero'
 import type { MockInstance } from 'vitest'
-import { createBuilder, createSchema, number, string, syncedQuery, table } from '@rocicorp/zero'
+import type { ShallowRef } from 'vue'
+import { createBuilder, createSchema, number, string, syncedQuery, table, Zero } from '@rocicorp/zero'
 import { describe, expect, it, vi } from 'vitest'
-import { computed, createApp, nextTick, onMounted, ref, shallowRef, watchEffect } from 'vue'
+import { computed, createApp, inject, onMounted, ref, shallowRef, watchEffect } from 'vue'
 import { createUseZero } from './create-use-zero'
-import { createZero } from './create-zero'
+import { createZero, zeroSymbol } from './create-zero'
 import { useQuery } from './query'
 import { VueView, vueViewFactory } from './view'
 
@@ -22,7 +23,7 @@ export function withSetup<T>(composable: () => T) {
   return [result, app] as const
 }
 
-async function setupTestEnvironment() {
+async function setupTestEnvironment(registerPlugin = true) {
   const schema = createSchema({
     tables: [
       table('table')
@@ -34,21 +35,37 @@ async function setupTestEnvironment() {
     ],
   })
 
-  const useZero = createUseZero<typeof schema>()
-  const [zero, app] = withSetup(useZero)
+  let zero: ShallowRef<ShallowRef<Zero<typeof schema> | undefined> | undefined | void>
+
   const userID = ref('asdf')
-  app.use(createZero(() => ({
-    userID: userID.value,
-    server: null,
-    schema,
-    kvStore: 'mem',
-  })))
+  const useZero = createUseZero<typeof schema>()
+
+  const setupResult = withSetup(registerPlugin ? useZero : () => {})
+  if (setupResult[0]) {
+    zero = setupResult[0]
+  }
+  const app = setupResult[1]
+
+  if (registerPlugin) {
+    app.use(createZero(() => ({
+      userID: userID.value,
+      server: null,
+      schema,
+      kvStore: 'mem',
+    })))
+  }
   app.mount(document.createElement('div'))
 
-  const z = computed(() => zero.value!.value)
+  const z = computed(() => {
+    if (zero?.value) {
+      return zero.value!.value!
+    }
 
-  await z!.value.mutate.table.insert({ a: 1, b: 'a' })
-  await z!.value.mutate.table.insert({ a: 2, b: 'b' })
+    return new Zero({ userID: 'asdf', server: null, schema, kvStore: 'mem' })
+  })
+
+  await z.value.mutate.table.insert({ a: 1, b: 'a' })
+  await z.value.mutate.table.insert({ a: 2, b: 'b' })
 
   const builder = createBuilder(schema)
   const byIdQuery = syncedQuery
@@ -74,7 +91,7 @@ async function setupTestEnvironment() {
 describe('useQuery', () => {
   it('useQuery', async () => {
     const { z, tableQuery, app } = await setupTestEnvironment()
-    await app.runWithContext(async () => {
+    await app!.runWithContext(async () => {
       const { data: rows, status } = useQuery(() => tableQuery)
       expect(rows.value).toMatchInlineSnapshot(`[
   {
@@ -125,7 +142,7 @@ describe('useQuery', () => {
       return
     }
 
-    await app.runWithContext(async () => {
+    await app!.runWithContext(async () => {
       const ttl = ref<TTL>('1m')
 
       const materializeSpy = vi.spyOn(tableQuery, 'materialize')
@@ -160,7 +177,7 @@ describe('useQuery', () => {
       return
     }
 
-    await app.runWithContext(async () => {
+    await app!.runWithContext(async () => {
       const ttl = ref<TTL>('1m')
 
       let materializeSpy: MockInstance
@@ -211,7 +228,7 @@ describe('useQuery', () => {
   it('useQuery deps change', async () => {
     const { z, tableQuery, app } = await setupTestEnvironment()
 
-    await app.runWithContext(async () => {
+    await app!.runWithContext(async () => {
       const a = ref(1)
 
       const { data: rows, status } = useQuery(() =>
@@ -273,7 +290,7 @@ describe('useQuery', () => {
 
   it('useQuery deps change watchEffect', async () => {
     const { z, tableQuery, app } = await setupTestEnvironment()
-    await app.runWithContext(async () => {
+    await app!.runWithContext(async () => {
       const a = ref(1)
       const { data: rows } = useQuery(() => tableQuery.where('a', a.value))
 
@@ -331,7 +348,7 @@ describe('useQuery', () => {
       return
     }
 
-    app.runWithContext(() => {
+    app!.runWithContext(() => {
       const a = ref(1)
       const { data: rows, status } = useQuery(() => byIdQuery(a.value))
 
@@ -349,8 +366,8 @@ describe('useQuery', () => {
     })
   })
 
-  it('useQuery can be used without plugin (dropped in future versions)', async () => {
-    const { z, tableQuery } = await setupTestEnvironment()
+  it('useQuery can be used without plugin (will be dropped in future versions)', async () => {
+    const { z, tableQuery, app } = await setupTestEnvironment(false)
 
     const { data: rows, status } = useQuery(() => tableQuery)
     expect(rows.value).toMatchInlineSnapshot(`[
@@ -366,6 +383,12 @@ describe('useQuery', () => {
   },
 ]`)
     expect(status.value).toEqual('unknown')
+
+    app.runWithContext(() => {
+      if (zeroSymbol) {
+        expect(inject(zeroSymbol, null)).toBeNull()
+      }
+    })
 
     z.value.close()
   })
