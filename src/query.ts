@@ -50,13 +50,13 @@ export function useQuery<
   }
 
   watch(
-    [() => toValue(query), () => z],
+    [() => toValue(query), () => toValue(z)],
     ([q, z]) => {
       view.value?.destroy()
 
       // Only present in v0.23+
-      if (z && z.value.materialize) {
-        view.value = z.value.materialize(q, vueViewFactory, { ttl: ttl.value })
+      if (z?.materialize) {
+        view.value = z.materialize(q, vueViewFactory, { ttl: ttl.value })
         return
       }
 
