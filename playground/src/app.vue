@@ -3,7 +3,7 @@ import { escapeLike, Zero } from '@rocicorp/zero'
 import { decodeJwt } from 'jose'
 import Cookies from 'js-cookie'
 import { computed, ref } from 'vue'
-import { useQuery } from 'zero-vue'
+import { createZero } from 'zero-vue'
 
 import { useInterval } from '~/composables/use-interval'
 import { randomMessage } from '~/db/data/test-data'
@@ -24,6 +24,8 @@ const z = new Zero({
   // the schema. Switch to 'idb' for local-persistence.
   kvStore: 'mem',
 })
+
+const { useQuery } = createZero({ zero: z })
 
 const { data: users } = useQuery(z.query.user)
 const { data: mediums } = useQuery(z.query.medium)
