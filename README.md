@@ -19,57 +19,54 @@ npm install zero-vue
 pnpm install zero-vue
 ```
 
-Register plugin:
-```js
-import { createApp } from 'vue'
+Creating `useZero` and `useQuery` composables:
+```ts
 import { createZero } from 'zero-vue'
+import type { Mutators } from './mutators.ts'
+import type { Schema } from './schema.ts'
 
-const app = createApp(App)
 // see docs for all options: https://zero.rocicorp.dev/docs/introduction
-app.use(createZero({
+const { useZero, useQuery } = createZero<Schema, Mutators>({
   userID,
+  server: import.meta.env.VITE_PUBLIC_SERVER,
+  schema,
+  kvStore: 'mem',
+})
+
+// OR with computed options:
+const { useZero, useQuery } = createZero<Schema, Mutators>(() => ({
+  userID: userID.value,
   server: import.meta.env.VITE_PUBLIC_SERVER,
   schema,
   kvStore: 'mem',
 }))
 
-// With computed options:
-app.use(createZero(() => ({
-  userID: userID.value,
-  server: import.meta.env.VITE_PUBLIC_SERVER,
-  schema,
-  kvStore: 'mem',
-})))
+// OR with a Zero instance:
+const { useZero, useQuery } = createZero<Schema, Mutators>({
+  zero: new Zero({
+    userID,
+    server: import.meta.env.VITE_PUBLIC_SERVER,
+    schema,
+    kvStore: 'mem',
+  }),
+})
 
-// Or with a Zero instance:
-app.use(createZero(new Zero({
+// untyped:
+const { useZero, useQuery } = createZero({
   userID,
   server: import.meta.env.VITE_PUBLIC_SERVER,
   schema,
   kvStore: 'mem',
-})))
-```
+})
 
-Creating `useZero` composable:
-```ts
-import type { Mutators } from './mutators.ts'
-import type { Schema } from './schema.ts'
-import { createUseZero } from 'zero-vue'
-
-// Typed:
-export const useZero = createUseZero<Schema, Mutators>()
-
-// Untyped:
-export const useZero = createUseZero()
 ```
 
 To query data:
 ```js
-import { useQuery } from 'zero-vue'
-import { useZero } from './use-zero.ts'
+import { useZero, useQuery } from './use-zero.ts'
 
 const z = useZero()
-const { data: users } = useQuery(z.value.query.user)
+const { data: users } = useQuery(() => z.value.query.user)
 ```
 
 > [!TIP]

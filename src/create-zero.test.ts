@@ -1,7 +1,7 @@
 import { createSchema, number, string, table, Zero } from '@rocicorp/zero'
 import { assert, describe, expect, it } from 'vitest'
-import { computed, createApp, inject, ref } from 'vue'
-import { createZero, zeroSymbol } from './create-zero'
+import { computed, ref } from 'vue'
+import { createZero } from './create-zero'
 
 const testSchema = createSchema({
   tables: [
@@ -15,41 +15,34 @@ const testSchema = createSchema({
 })
 
 describe('createZero', () => {
-  it('installs and provides zero instance to Vue app', () => {
-    const app = createApp({})
-    app.use(createZero({
+  it('creates a zero instance', () => {
+    const { useZero } = createZero({
       userID: 'test-user',
       server: null,
       schema: testSchema,
       kvStore: 'mem' as const,
-    }))
-
-    app.runWithContext(() => {
-      const zero = inject(zeroSymbol)
-      assert(zero?.value)
-      expect(zero?.value.userID).toEqual('test-user')
     })
+
+    const zero = useZero()
+    assert(zero?.value)
+    expect(zero?.value.userID).toEqual('test-user')
   })
 
   it('accepts Zero instance instead of options', () => {
-    const app = createApp({})
     const zero = new Zero({
       userID: 'test-user',
       server: null,
       schema: testSchema,
       kvStore: 'mem' as const,
     })
-    app.use(createZero({ zero }))
+    const { useZero } = createZero({ zero })
 
-    app.runWithContext(() => {
-      const injectedZero = inject(zeroSymbol)
-      assert(injectedZero?.value)
-      expect(injectedZero.value).toEqual(zero)
-    })
+    const usedZero = useZero()
+    assert(usedZero?.value)
+    expect(usedZero.value).toEqual(zero)
   })
 
   it('updates when options change', async () => {
-    const app = createApp({})
     const userID = ref('test-user')
     const zeroOptions = computed(() => ({
       userID: userID.value,
@@ -58,27 +51,24 @@ describe('createZero', () => {
       kvStore: 'mem' as const,
     }))
 
-    app.use(createZero(zeroOptions))
+    const { useZero } = createZero(zeroOptions)
 
-    await app.runWithContext(async () => {
-      const injectedZero = inject(zeroSymbol)
-      assert(injectedZero?.value)
+    const zero = useZero()
+    assert(zero?.value)
 
-      expect(injectedZero.value.userID).toEqual('test-user')
+    expect(zero.value.userID).toEqual('test-user')
 
-      const oldZero = injectedZero.value
+    const oldZero = zero.value
 
-      userID.value = 'test-user-2'
-      await 1
+    userID.value = 'test-user-2'
+    await 1
 
-      expect(injectedZero.value.userID).toEqual('test-user-2')
-      expect(injectedZero.value.closed).toBe(false)
-      expect(oldZero.closed).toBe(true)
-    })
+    expect(zero.value.userID).toEqual('test-user-2')
+    expect(zero.value.closed).toBe(false)
+    expect(oldZero.closed).toBe(true)
   })
 
   it('updates when Zero instance changes', async () => {
-    const app = createApp({})
     const userID = ref('test-user')
 
     const zero = computed(() => ({ zero: new Zero({
@@ -88,22 +78,19 @@ describe('createZero', () => {
       kvStore: 'mem' as const,
     }) }))
 
-    app.use(createZero(zero))
+    const { useZero } = createZero(zero)
+    const usedZero = useZero()
+    assert(usedZero?.value)
 
-    await app.runWithContext(async () => {
-      const injectedZero = inject(zeroSymbol)
-      assert(injectedZero?.value)
+    expect(usedZero.value.userID).toEqual('test-user')
 
-      expect(injectedZero.value.userID).toEqual('test-user')
+    const oldZero = usedZero.value
 
-      const oldZero = injectedZero.value
+    userID.value = 'test-user-2'
+    await 1
 
-      userID.value = 'test-user-2'
-      await 1
-
-      expect(injectedZero.value.userID).toEqual('test-user-2')
-      expect(injectedZero.value.closed).toBe(false)
-      expect(oldZero.closed).toBe(true)
-    })
+    expect(usedZero.value.userID).toEqual('test-user-2')
+    expect(usedZero.value.closed).toBe(false)
+    expect(oldZero.closed).toBe(true)
   })
 })
