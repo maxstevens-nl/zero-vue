@@ -4,6 +4,7 @@ import { createBuilder, createSchema, number, string, syncedQuery, table } from 
 import { describe, expect, it, vi } from 'vitest'
 import { ref, watchEffect } from 'vue'
 import { createZero } from './create-zero'
+import { useQuery } from './query'
 import { VueView, vueViewFactory } from './view'
 
 async function setupTestEnvironment() {
@@ -310,6 +311,27 @@ describe('useQuery', () => {
   {
     "a": 1,
     "b": "a",
+    Symbol(rc): 1,
+  },
+]`)
+    expect(status.value).toEqual('unknown')
+
+    z.value.close()
+  })
+
+  it('can still be used without createZero', async () => {
+    const { z, tableQuery } = await setupTestEnvironment()
+
+    const { data: rows, status } = useQuery(() => tableQuery)
+    expect(rows.value).toMatchInlineSnapshot(`[
+  {
+    "a": 1,
+    "b": "a",
+    Symbol(rc): 1,
+  },
+  {
+    "a": 2,
+    "b": "b",
     Symbol(rc): 1,
   },
 ]`)
