@@ -1,9 +1,9 @@
-import type { CustomMutatorDefs, Schema, ZeroOptions } from '@rocicorp/zero'
-import type { App, InjectionKey, MaybeRefOrGetter, ShallowRef } from 'vue'
+import type { CustomMutatorDefs, Query, Schema, ZeroOptions } from '@rocicorp/zero'
+import type { MaybeRefOrGetter, ShallowRef } from 'vue'
+import type { QueryResult, UseQueryOptions } from './query'
 import { Zero } from '@rocicorp/zero'
 import { shallowRef, toValue, watch } from 'vue'
-
-export const zeroSymbol = Symbol('zero') as InjectionKey<ShallowRef<Zero<Schema, undefined>>>
+import { useQuery } from './query'
 
 const zeroCleanups = new Set()
 
@@ -23,10 +23,18 @@ export function createZero<S extends Schema = Schema, MD extends CustomMutatorDe
     z.value = 'zero' in opts ? opts.zero : new Zero(opts)
   }, { deep: true })
 
+  function useQueryWrap<
+    TTable extends keyof S['tables'] & string,
+    TReturn,
+  >(
+    query: MaybeRefOrGetter<Query<S, TTable, TReturn>>,
+    options?: MaybeRefOrGetter<UseQueryOptions>,
+  ): QueryResult<TReturn> {
+    return useQuery(z, query, options)
+  }
+
   return {
-    install: (app: App) => {
-      // @ts-expect-error - The type of z doesn't line up with the type of zeroSymbol.
-      app.provide(zeroSymbol, z)
-    },
+    useZero: () => z,
+    useQuery: useQueryWrap,
   }
 }
