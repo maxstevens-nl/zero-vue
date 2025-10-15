@@ -21,9 +21,9 @@ pnpm install zero-vue
 
 Creating `useZero` and `useQuery` composables:
 ```ts
-import { createZero } from 'zero-vue'
 import type { Mutators } from './mutators.ts'
 import type { Schema } from './schema.ts'
+import { createZero } from 'zero-vue'
 
 // see docs for all options: https://zero.rocicorp.dev/docs/introduction
 const { useZero, useQuery } = createZero<Schema, Mutators>({
@@ -58,12 +58,11 @@ const { useZero, useQuery } = createZero({
   schema,
   kvStore: 'mem',
 })
-
 ```
 
 To query data:
 ```js
-import { useZero, useQuery } from './use-zero.ts'
+import { useQuery, useZero } from './use-zero.ts'
 
 const z = useZero()
 const { data: users } = useQuery(() => z.value.query.user)
