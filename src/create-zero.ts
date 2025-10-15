@@ -3,7 +3,7 @@ import type { MaybeRefOrGetter, ShallowRef } from 'vue'
 import type { QueryResult, UseQueryOptions } from './query'
 import { Zero } from '@rocicorp/zero'
 import { shallowRef, toValue, watch } from 'vue'
-import { useQuery } from './query'
+import { useQueryWithZero } from './query'
 
 const zeroCleanups = new Set()
 
@@ -23,18 +23,18 @@ export function createZero<S extends Schema = Schema, MD extends CustomMutatorDe
     z.value = 'zero' in opts ? opts.zero : new Zero(opts)
   }, { deep: true })
 
-  function useQueryWrap<
+  function useQuery<
     TTable extends keyof S['tables'] & string,
     TReturn,
   >(
     query: MaybeRefOrGetter<Query<S, TTable, TReturn>>,
     options?: MaybeRefOrGetter<UseQueryOptions>,
   ): QueryResult<TReturn> {
-    return useQuery(z, query, options)
+    return useQueryWithZero(query, options, z)
   }
 
   return {
     useZero: () => z,
-    useQuery: useQueryWrap,
+    useQuery,
   }
 }
