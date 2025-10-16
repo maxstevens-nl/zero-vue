@@ -21,42 +21,37 @@ pnpm install zero-vue
 
 Creating `useZero` and `useQuery` composables:
 ```ts
-import type { Mutators } from './mutators.ts'
-import type { Schema } from './schema.ts'
 import { createZero } from 'zero-vue'
+import { mutators } from './mutators.ts'
+import { schema } from './schema.ts'
 
 // see docs for all options: https://zero.rocicorp.dev/docs/introduction
-const { useZero, useQuery } = createZero<Schema, Mutators>({
-  userID,
-  server: import.meta.env.VITE_PUBLIC_SERVER,
-  schema,
-  kvStore: 'mem',
-})
-
-// OR with computed options:
-const { useZero, useQuery } = createZero<Schema, Mutators>(() => ({
-  userID: userID.value,
-  server: import.meta.env.VITE_PUBLIC_SERVER,
-  schema,
-  kvStore: 'mem',
-}))
-
-// OR with a Zero instance:
-const { useZero, useQuery } = createZero<Schema, Mutators>({
-  zero: new Zero({
-    userID,
-    server: import.meta.env.VITE_PUBLIC_SERVER,
-    schema,
-    kvStore: 'mem',
-  }),
-})
-
-// untyped:
 const { useZero, useQuery } = createZero({
   userID,
   server: import.meta.env.VITE_PUBLIC_SERVER,
   schema,
+  mutators,
   kvStore: 'mem',
+})
+
+// OR with computed options:
+const { useZero, useQuery } = createZero(() => ({
+  userID: userID.value,
+  server: import.meta.env.VITE_PUBLIC_SERVER,
+  schema,
+  mutators,
+  kvStore: 'mem',
+}))
+
+// OR with a Zero instance:
+const { useZero, useQuery } = createZero({
+  zero: new Zero({
+    userID,
+    server: import.meta.env.VITE_PUBLIC_SERVER,
+    schema,
+    mutators,
+    kvStore: 'mem',
+  }),
 })
 ```
 
