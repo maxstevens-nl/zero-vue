@@ -1,5 +1,6 @@
 packages:
   - playground
+  - playground-nuxt
 
 ignoredBuiltDependencies:
   - esbuild
@@ -7,6 +8,7 @@ ignoredBuiltDependencies:
   - unrs-resolver
 
 onlyBuiltDependencies:
+  - '@parcel/watcher'
   - '@rocicorp/zero-sqlite3'
   - oxc-resolver
   - simple-git-hooks

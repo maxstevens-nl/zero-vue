@@ -1,0 +1,26 @@
+{
+  "name": "nuxt-app",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "dev:ui": "nuxt dev",
+    "dev:zero-cache": "zero-cache-dev -p ./shared/db/schema.ts",
+    "dev:db-up": "docker compose --env-file .env -f ./docker/docker-compose.yml up",
+    "dev:db-down": "docker compose --env-file .env -f ./docker/docker-compose.yml down",
+    "dev:clean": "source .env && docker volume rm -f docker_zstart_pgdata && rm -rf \"${ZERO_REPLICA_FILE}\"*"
+  },
+  "dependencies": {
+    "jose": "^6.1.0",
+    "nuxt": "^4.1.1",
+    "vue": "^3.5.21",
+    "vue-router": "^4.5.1",
+    "zero-vue": "file:../"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "6.0.1"
+  }
+}
