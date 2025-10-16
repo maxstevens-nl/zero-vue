@@ -1,24 +1,24 @@
 import type { TTL } from '@rocicorp/zero'
 import type { MockInstance } from 'vitest'
-import { createBuilder, createSchema, number, string, syncedQuery, table } from '@rocicorp/zero'
+import { createBuilder, createSchema, number, string, syncedQuery, table, Zero } from '@rocicorp/zero'
 import { describe, expect, it, vi } from 'vitest'
-import { ref, watchEffect } from 'vue'
+import { nextTick, ref, watchEffect } from 'vue'
 import { createZero } from './create-zero'
 import { useQuery } from './query'
 import { VueView, vueViewFactory } from './view'
 
-async function setupTestEnvironment() {
-  const schema = createSchema({
-    tables: [
-      table('table')
-        .columns({
-          a: number(),
-          b: string(),
-        })
-        .primaryKey('a'),
-    ],
-  })
+const schema = createSchema({
+  tables: [
+    table('table')
+      .columns({
+        a: number(),
+        b: string(),
+      })
+      .primaryKey('a'),
+  ],
+})
 
+async function setupTestEnvironment() {
   const userID = ref('asdf')
 
   const { useZero, useQuery } = createZero(() => ({
@@ -72,7 +72,7 @@ describe('useQuery', () => {
     expect(status.value).toEqual('unknown')
 
     await z.value.mutate.table.insert({ a: 3, b: 'c' })
-    await 1
+    await nextTick()
 
     expect(rows.value).toMatchInlineSnapshot(`[
   {
@@ -123,7 +123,7 @@ describe('useQuery', () => {
     materializeSpy.mockClear()
 
     ttl.value = '10m'
-    await 1
+    await nextTick()
 
     expect(materializeSpy).toHaveBeenCalledTimes(0)
     expect(updateTTLSpy).toHaveBeenCalledExactlyOnceWith('10m')
@@ -176,7 +176,7 @@ describe('useQuery', () => {
     materializeSpy.mockClear()
 
     ttl.value = '10m'
-    await 1
+    await nextTick()
 
     expect(materializeSpy).toHaveBeenCalledTimes(0)
     expect(updateTTLSpy).toHaveBeenCalledExactlyOnceWith('10m')
@@ -225,7 +225,7 @@ describe('useQuery', () => {
     resetLogs()
 
     a.value = 2
-    await 1
+    await nextTick()
 
     expect(rowLog).toMatchInlineSnapshot(`[
   [
@@ -320,9 +320,16 @@ describe('useQuery', () => {
   })
 
   it('can still be used without createZero', async () => {
-    const { z, tableQuery } = await setupTestEnvironment()
+    const z = new Zero({
+      userID: 'test-user',
+      server: null,
+      schema,
+      kvStore: 'mem' as const,
+    })
+    await z.mutate.table.insert({ a: 1, b: 'a' })
+    await z.mutate.table.insert({ a: 2, b: 'b' })
 
-    const { data: rows, status } = useQuery(() => tableQuery)
+    const { data: rows, status } = useQuery(() => z.query.table)
     expect(rows.value).toMatchInlineSnapshot(`[
   {
     "a": 1,
@@ -337,6 +344,6 @@ describe('useQuery', () => {
 ]`)
     expect(status.value).toEqual('unknown')
 
-    z.value.close()
+    z.close()
   })
 })
