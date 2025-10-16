@@ -118,7 +118,7 @@ function editMessage(e: MouseEvent, id: string, senderID: string, prev: string) 
 
 async function toggleLogin() {
   if (z.value.userID === 'anon') {
-    await fetch('/api/login')
+    await useFetch('/api/login')
   }
   else {
     const cookie = useCookie('jwt')
