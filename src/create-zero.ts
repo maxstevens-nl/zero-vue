@@ -10,18 +10,25 @@ const zeroCleanups = new Set()
 export function createZero<S extends Schema = Schema, MD extends CustomMutatorDefs | undefined = undefined>(optsOrZero: MaybeRefOrGetter<ZeroOptions<S, MD> | { zero: Zero<S, MD> }>) {
   const z = shallowRef() as ShallowRef<Zero<S, MD>>
 
-  const opts = toValue(optsOrZero)
-  z.value = 'zero' in opts ? opts.zero : new Zero(opts)
+  function useZero() {
+    if (z.value) {
+      return z
+    }
 
-  watch(() => toValue(optsOrZero), (opts) => {
-    const cleanupZeroPromise = z.value.close()
-    zeroCleanups.add(cleanupZeroPromise)
-    cleanupZeroPromise.finally(() => {
-      zeroCleanups.delete(cleanupZeroPromise)
-    })
+    watch(() => toValue(optsOrZero), (opts) => {
+      if (z.value && !z.value.closed) {
+        const cleanupZeroPromise = z.value.close()
+        zeroCleanups.add(cleanupZeroPromise)
+        cleanupZeroPromise.finally(() => {
+          zeroCleanups.delete(cleanupZeroPromise)
+        })
+      }
 
-    z.value = 'zero' in opts ? opts.zero : new Zero(opts)
-  }, { deep: true })
+      z.value = 'zero' in opts ? opts.zero : new Zero(opts)
+    }, { deep: true, immediate: true })
+
+    return z
+  }
 
   function useQuery<
     TTable extends keyof S['tables'] & string,
@@ -30,11 +37,12 @@ export function createZero<S extends Schema = Schema, MD extends CustomMutatorDe
     query: MaybeRefOrGetter<Query<S, TTable, TReturn>>,
     options?: MaybeRefOrGetter<UseQueryOptions>,
   ): QueryResult<TReturn> {
+    const z = useZero()
     return useQueryWithZero(query, options, z)
   }
 
   return {
-    useZero: () => z,
+    useZero,
     useQuery,
   }
 }
