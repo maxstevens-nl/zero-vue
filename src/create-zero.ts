@@ -8,9 +8,13 @@ import { useQueryWithZero } from './query'
 const zeroCleanups = new Set()
 
 export function createZero<S extends Schema = Schema, MD extends CustomMutatorDefs | undefined = undefined>(optsOrZero: MaybeRefOrGetter<ZeroOptions<S, MD> | { zero: Zero<S, MD> }>) {
-  const z = shallowRef() as ShallowRef<Zero<S, MD>>
+  let z: ShallowRef<Zero<S, MD>>
 
-  function useZero() {
+  function useZero(): ShallowRef<Zero<S, MD>> {
+    if (!z) {
+      z = shallowRef() as ShallowRef<Zero<S, MD>>
+    }
+
     if (z.value) {
       return z
     }
