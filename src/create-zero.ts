@@ -5,8 +5,6 @@ import { Zero } from '@rocicorp/zero'
 import { shallowRef, toValue, watch } from 'vue'
 import { useQueryWithZero } from './query'
 
-const zeroCleanups = new Set()
-
 export function createZero<S extends Schema = Schema, MD extends CustomMutatorDefs | undefined = undefined>(optsOrZero: MaybeRefOrGetter<ZeroOptions<S, MD> | { zero: Zero<S, MD> }>) {
   let z: ShallowRef<Zero<S, MD>>
 
@@ -21,11 +19,7 @@ export function createZero<S extends Schema = Schema, MD extends CustomMutatorDe
 
     watch(() => toValue(optsOrZero), (opts) => {
       if (z.value && !z.value.closed) {
-        const cleanupZeroPromise = z.value.close()
-        zeroCleanups.add(cleanupZeroPromise)
-        cleanupZeroPromise.finally(() => {
-          zeroCleanups.delete(cleanupZeroPromise)
-        })
+        void z.value.close()
       }
 
       z.value = 'zero' in opts ? opts.zero : new Zero(opts)
