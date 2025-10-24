@@ -1,6 +1,6 @@
 import { createSchema, string, table } from '@rocicorp/zero'
 import { describe, expect, it } from 'vitest'
-import { createZero } from '../src'
+import { createZeroComposables } from '../src'
 
 describe('zero-vue', () => {
   it('works', async () => {
@@ -15,7 +15,7 @@ describe('zero-vue', () => {
       tables: [user],
     })
 
-    const { useZero, useQuery } = createZero(() => ({
+    const { useZero, useQuery } = createZeroComposables(() => ({
       userID: 'asdf',
       server: null,
       schema,

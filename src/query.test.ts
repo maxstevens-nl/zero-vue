@@ -3,7 +3,7 @@ import type { MockInstance } from 'vitest'
 import { createBuilder, createSchema, number, string, syncedQuery, table, Zero } from '@rocicorp/zero'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick, ref, watchEffect } from 'vue'
-import { createZero } from './create-zero'
+import { createZeroComposables } from './create-zero-composables'
 import { useQuery } from './query'
 import { VueView, vueViewFactory } from './view'
 
@@ -21,7 +21,7 @@ const schema = createSchema({
 async function setupTestEnvironment() {
   const userID = ref('asdf')
 
-  const { useZero, useQuery } = createZero(() => ({
+  const { useZero, useQuery } = createZeroComposables(() => ({
     userID: userID.value,
     server: null,
     schema,

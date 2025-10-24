@@ -5,7 +5,7 @@ import { Zero } from '@rocicorp/zero'
 import { shallowRef, toValue, watch } from 'vue'
 import { useQueryWithZero } from './query'
 
-export function createZero<S extends Schema = Schema, MD extends CustomMutatorDefs | undefined = undefined>(optsOrZero: MaybeRefOrGetter<ZeroOptions<S, MD> | { zero: Zero<S, MD> }>) {
+export function createZeroComposables<S extends Schema = Schema, MD extends CustomMutatorDefs | undefined = undefined>(optsOrZero: MaybeRefOrGetter<ZeroOptions<S, MD> | { zero: Zero<S, MD> }>) {
   let z: ShallowRef<Zero<S, MD>>
 
   function useZero(): ShallowRef<Zero<S, MD>> {
@@ -36,7 +36,7 @@ export function createZero<S extends Schema = Schema, MD extends CustomMutatorDe
     options?: MaybeRefOrGetter<UseQueryOptions>,
   ): QueryResult<TReturn> {
     const z = useZero()
-    return useQueryWithZero(query, options, z)
+    return useQueryWithZero(z, query, options)
   }
 
   return {

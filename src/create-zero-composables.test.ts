@@ -1,7 +1,7 @@
 import { createBuilder, createSchema, number, string, syncedQuery, table, Zero } from '@rocicorp/zero'
 import { assert, describe, expect, it } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
-import { createZero } from './create-zero'
+import { createZeroComposables } from './create-zero-composables'
 
 const testSchema = createSchema({
   tables: [
@@ -14,9 +14,9 @@ const testSchema = createSchema({
   ],
 })
 
-describe('createZero', () => {
+describe('createZeroComposables', () => {
   it('creates a zero instance', () => {
-    const { useZero } = createZero({
+    const { useZero } = createZeroComposables({
       userID: 'test-user',
       server: null,
       schema: testSchema,
@@ -35,7 +35,7 @@ describe('createZero', () => {
       schema: testSchema,
       kvStore: 'mem' as const,
     })
-    const { useZero } = createZero({ zero })
+    const { useZero } = createZeroComposables({ zero })
 
     const usedZero = useZero()
     assert(usedZero.value)
@@ -51,7 +51,7 @@ describe('createZero', () => {
       kvStore: 'mem' as const,
     }))
 
-    const { useZero } = createZero(zeroOptions)
+    const { useZero } = createZeroComposables(zeroOptions)
 
     const zero = useZero()
     assert(zero.value)
@@ -93,7 +93,7 @@ describe('createZero', () => {
       },
     )
 
-    const { useQuery } = createZero({
+    const { useQuery } = createZeroComposables({
       zero: z,
     })
 
@@ -118,7 +118,7 @@ describe('createZero', () => {
       kvStore: 'mem' as const,
     }) }))
 
-    const { useZero } = createZero(zero)
+    const { useZero } = createZeroComposables(zero)
     const usedZero = useZero()
     assert(usedZero?.value)
 
@@ -157,7 +157,7 @@ describe('createZero', () => {
       },
     )
 
-    const { useZero } = createZero(proxiedOpts)
+    const { useZero } = createZeroComposables(proxiedOpts)
 
     expect(zeroAccessCount).toBe(0)
 

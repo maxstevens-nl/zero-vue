@@ -1,12 +1,12 @@
 import { useCookies } from '@vueuse/integrations/useCookies'
 import { decodeJwt } from 'jose'
-import { createZero } from 'zero-vue'
+import { createZeroComposables } from 'zero-vue'
 
 import { schema } from '~/db/schema'
 
 const cookies = useCookies()
 
-export const { useZero, useQuery } = createZero(() => {
+export const { useZero, useQuery } = createZeroComposables(() => {
   const encodedJWT = cookies.get('jwt')
   const decodedJWT = encodedJWT && decodeJwt(encodedJWT)
   const userID = decodedJWT?.sub ? (decodedJWT.sub as string) : 'anon'

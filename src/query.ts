@@ -43,7 +43,7 @@ export function useQuery<
   query: MaybeRefOrGetter<Query<TSchema, TTable, TReturn>>,
   options?: MaybeRefOrGetter<UseQueryOptions>,
 ): QueryResult<TReturn> {
-  return useQueryWithZero(query, options)
+  return useQueryWithZero(undefined as unknown as Zero<TSchema>, query, options)
 }
 
 export function useQueryWithZero<
@@ -52,9 +52,9 @@ export function useQueryWithZero<
   TReturn,
   MD extends CustomMutatorDefs | undefined = undefined,
 >(
+  z: MaybeRefOrGetter<Zero<TSchema, MD>>,
   query: MaybeRefOrGetter<Query<TSchema, TTable, TReturn>>,
   options?: MaybeRefOrGetter<UseQueryOptions>,
-  z?: MaybeRefOrGetter<Zero<TSchema, MD>>,
 ): QueryResult<TReturn> {
   const ttl = computed(() => {
     return toValue(options)?.ttl ?? DEFAULT_TTL_MS
