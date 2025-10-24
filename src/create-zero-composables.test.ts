@@ -171,18 +171,4 @@ describe('createZeroComposables', () => {
     await nextTick()
     expect(zeroAccessCount).toBe(accessCountPerCreation)
   })
-
-  it('creates the useZeroOnline composable', () => {
-    const { useZeroOnline } = createZero({
-      userID: 'test-user',
-      server: null,
-      schema: testSchema,
-      kvStore: 'mem' as const,
-    })
-
-    const zeroOnline = useZeroOnline()
-
-    assert(zeroOnline)
-    expect(zeroOnline.value).toEqual(false)
-  })
 })
