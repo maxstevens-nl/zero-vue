@@ -7,15 +7,10 @@ import { useQueryWithZero } from './query'
 
 export function createZeroComposables<S extends Schema = Schema, MD extends CustomMutatorDefs | undefined = undefined>(optsOrZero: MaybeRefOrGetter<ZeroOptions<S, MD> | { zero: Zero<S, MD> }>) {
   let z: ShallowRef<Zero<S, MD>>
-  let onOnlineCleanup: (() => void) | undefined
 
-  function cleanup() {
-    if (z.value) {
+  function closeZero() {
+    if (z.value && !z.value.closed) {
       void z.value.close()
-    }
-
-    if (onOnlineCleanup) {
-      onOnlineCleanup()
     }
   }
 
@@ -29,10 +24,7 @@ export function createZeroComposables<S extends Schema = Schema, MD extends Cust
     }
 
     watch(() => toValue(optsOrZero), (opts) => {
-      if (z.value && !z.value.closed) {
-        void z.value.close()
-      }
-
+      closeZero()
       z.value = 'zero' in opts ? opts.zero : new Zero(opts)
     }, { deep: true, immediate: true })
 
@@ -51,7 +43,7 @@ export function createZeroComposables<S extends Schema = Schema, MD extends Cust
   }
 
   if (getCurrentScope()) {
-    onScopeDispose(cleanup)
+    onScopeDispose(closeZero)
   }
 
   return {
