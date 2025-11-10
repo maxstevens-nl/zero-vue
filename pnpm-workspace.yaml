@@ -10,3 +10,5 @@ onlyBuiltDependencies:
   - '@rocicorp/zero-sqlite3'
   - oxc-resolver
   - simple-git-hooks
+trustPolicy: no-downgrade
+
