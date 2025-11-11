@@ -11,4 +11,3 @@ onlyBuiltDependencies:
   - oxc-resolver
   - simple-git-hooks
 trustPolicy: no-downgrade
-
